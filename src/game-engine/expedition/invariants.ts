@@ -26,8 +26,8 @@ export class InvariantViolation extends Error {
 }
 
 export function assertGameInvariants(state: GameState): void {
-  if (state.version !== 3) {
-    throw new InvariantViolation(`game state version ${state.version} != 3`);
+  if (state.version !== 4) {
+    throw new InvariantViolation(`game state version ${state.version} != 4`);
   }
 
   const validModes = new Set([

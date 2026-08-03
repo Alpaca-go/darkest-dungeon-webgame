@@ -714,7 +714,7 @@ export interface ExpeditionState {
 // 顶层 GameState (SPEC §27)
 // =====================================================================
 
-export const GAME_STATE_VERSION = 3;
+export const GAME_STATE_VERSION = 4;
 
 export interface GameState {
   version: typeof GAME_STATE_VERSION;

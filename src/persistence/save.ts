@@ -1,8 +1,8 @@
 /**
- * 存档(Phase 3)
+ * 存档(Phase 4 P4.5)
  *
  * 持久化:
- * - 完整 GameState(v3,带 campaign/hamlet 字段)
+ * - 完整 GameState(v4,含 Phase 4 怪癖/疾病/饰品/成长/露营)
  * - 当前 Seed
  * - UI 设置
  *
@@ -14,9 +14,12 @@
  * - RNG 状态
  * - 事件日志
  * - Phase 3:周数 / 金币 / 名册 / 任务 / 招募候选
+ * - Phase 4: 怪癖 / 疾病 / 饰品 / 露营状态 / 持续 Buff
  *
  * 版本迁移:
- * - v2 (Phase 1/2):无 campaign/hamlet 字段 → 升级到 v3 时补空
+ * - v2 → v3: 补 campaign/hamlet 字段
+ * - v3 → v4: 补 hero.lockedPositiveQuirkIds/diseaseIds/equippedTrinketInstanceIds,
+ *            补 campaign.trinketInventory, 补 expedition.campState/expeditionBuffs/campUsed
  *
  * 不会保存 UI 状态(由 UI Store 重新初始化)
  */
@@ -24,12 +27,13 @@
 import type { GameState } from '../game-engine/expedition/types.js';
 import { GAME_STATE_VERSION } from '../game-engine/expedition/types.js';
 
-const STORAGE_KEY = 'dd-web-expedition-save-v3';
+const STORAGE_KEY = 'dd-web-expedition-save-v4';
+const STORAGE_KEY_V3 = 'dd-web-expedition-save-v3';
 const STORAGE_KEY_V2 = 'dd-web-expedition-save-v2';
-const SETTINGS_KEY = 'dd-web-settings-v3';
+const SETTINGS_KEY = 'dd-web-settings-v4';
 
 export interface SaveData {
-  version: 3;
+  version: 4;
   state: GameState;
   savedAt: string;
 }
@@ -44,13 +48,13 @@ export function saveGame(state: GameState): void {
   if (typeof localStorage === 'undefined') return;
   try {
     const data: SaveData = {
-      version: 3,
+      version: 4,
       state,
       savedAt: new Date().toISOString(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    // 写完 v3 后清掉旧 v2(避免下次再迁移)
-    try { localStorage.removeItem(STORAGE_KEY_V2); } catch { /* ignore */ }
+    // 写完 v4 后清掉旧 v3(避免下次再迁移)
+    try { localStorage.removeItem(STORAGE_KEY_V3); } catch { /* ignore */ }
   } catch (e) {
     console.warn('[save] failed to save game', e);
   }
@@ -59,24 +63,64 @@ export function saveGame(state: GameState): void {
 export function loadGame(): SaveData | null {
   if (typeof localStorage === 'undefined') return null;
   try {
-    // 优先读 v3
-    const v3Raw = localStorage.getItem(STORAGE_KEY);
-    if (v3Raw) {
-      const data = JSON.parse(v3Raw) as SaveData;
-      if (data.version !== 3) return null;
+    // 优先读 v4
+    const v4Raw = localStorage.getItem(STORAGE_KEY);
+    if (v4Raw) {
+      const data = JSON.parse(v4Raw) as SaveData;
+      if (data.version !== 4) return null;
       if (data.state.version !== GAME_STATE_VERSION) return null;
       return data;
+    }
+    // 没有 v4 尝试 v3 迁移
+    const v3Raw = localStorage.getItem(STORAGE_KEY_V3);
+    if (v3Raw) {
+      const v3 = JSON.parse(v3Raw) as { version: 3; state: GameState; savedAt: string };
+      if (v3.version !== 3) return null;
+      const migrated = migrateV3ToV4(v3);
+      if (migrated) {
+        saveGame(migrated.state);
+        return migrated;
+      }
     }
     // 没有 v3 尝试 v2 迁移
     const v2Raw = localStorage.getItem(STORAGE_KEY_V2);
     if (v2Raw) {
       const v2 = JSON.parse(v2Raw) as { version: 2; state: GameState; savedAt: string };
       if (v2.version !== 2) return null;
-      const migrated = migrateV2ToV3(v2);
-      if (migrated) {
-        // 升级后立即写 v3
-        saveGame(migrated.state);
-        return migrated;
+      // v2 → v4: 链式迁移(v2 → v4 直接,补全部 v3+v4 字段)
+      const intermediate = v2.state as unknown as GameState;
+      const v2Migrated: { state: GameState; savedAt: string } = {
+        state: {
+          ...intermediate,
+          version: 4 as typeof GAME_STATE_VERSION,
+          campaign: intermediate.campaign ?? null,
+          hamlet: intermediate.hamlet ?? null,
+          // v3 字段(给 migrateV3ToV4 补)
+          expedition: {
+            ...intermediate.expedition,
+            campState: null,
+            expeditionBuffs: [],
+            campUsed: false,
+          },
+          // hero P4 字段
+          party: Object.fromEntries(
+            Object.entries(intermediate.party).map(([id, hero]) => [
+              id,
+              {
+                ...hero,
+                lockedPositiveQuirkIds: hero.lockedPositiveQuirkIds ?? [],
+                diseaseIds: hero.diseaseIds ?? [],
+                equippedTrinketInstanceIds: hero.equippedTrinketInstanceIds ?? [null, null],
+              },
+            ]),
+          ) as typeof intermediate.party,
+        } as GameState,
+        savedAt: v2.savedAt,
+      };
+      const v4Migrated = migrateV3ToV4(v2Migrated);
+      if (v4Migrated) {
+        saveGame(v4Migrated.state);
+        return v4Migrated;
       }
     }
     return null;
@@ -87,21 +131,45 @@ export function loadGame(): SaveData | null {
 }
 
 /**
- * V2 → V3 迁移:给老存档补 campaign/hamlet 字段
- * V2 存档没有这些字段,但 hero 的 stress/affliction 仍要保留。
- * 远征过程中不能直接变 hamlet-overview(老存档可能仍在 expedition mode),
- * 也不应在迁移时推进周数 — 留给玩家自己操作。
+ * V3 → V4 迁移(Phase 4):
+ * - 补 hero.lockedPositiveQuirkIds / diseaseIds / equippedTrinketInstanceIds
+ * - 补 campaign.trinketInventory
+ * - 补 expedition.campState / expeditionBuffs / campUsed
  */
-function migrateV2ToV3(v2: { state: GameState; savedAt: string }): SaveData | null {
-  const s = v2.state;
-  // 必填字段填默认值(campaign/hamlet 留空,等玩家触发第一次 START_EXPEDITION 才会创建)
+function migrateV3ToV4(v3: { state: GameState; savedAt: string }): SaveData | null {
+  const s = v3.state;
+  // Hero 字段补全
+  const newParty: typeof s.party = {};
+  for (const [id, hero] of Object.entries(s.party)) {
+    newParty[id] = {
+      ...hero,
+      lockedPositiveQuirkIds: hero.lockedPositiveQuirkIds ?? [],
+      diseaseIds: hero.diseaseIds ?? [],
+      equippedTrinketInstanceIds: hero.equippedTrinketInstanceIds ?? [null, null],
+    };
+  }
+  // Expedition 字段补全
+  const newExpedition = {
+    ...s.expedition,
+    campState: s.expedition.campState ?? null,
+    expeditionBuffs: s.expedition.expeditionBuffs ?? [],
+    campUsed: s.expedition.campUsed ?? false,
+  };
+  // Campaign 字段补全
+  const newCampaign = s.campaign
+    ? {
+        ...s.campaign,
+        trinketInventory: s.campaign.trinketInventory ?? { ownedInstanceIds: [], equippedByHero: {} },
+      }
+    : s.campaign;
   const newState: GameState = {
     ...s,
-    version: 3,
-    campaign: s.campaign ?? null,
-    hamlet: s.hamlet ?? null,
+    version: 4,
+    party: newParty,
+    expedition: newExpedition,
+    campaign: newCampaign,
   };
-  return { version: 3, state: newState, savedAt: v2.savedAt };
+  return { version: 4, state: newState, savedAt: v3.savedAt };
 }
 
 export function clearGame(): void {
@@ -136,8 +204,8 @@ export function loadSettings(): PersistedSettings | null {
 export function exportDebugPackage(state: GameState, error?: Error): string {
   return JSON.stringify(
     {
-      gameVersion: '0.2.0-phase1-v2',
-      contentVersion: 'phase1-v2',
+      gameVersion: '0.4.0-phase4',
+      contentVersion: 'phase4',
       seed: state.seed,
       state,
       commands: [],
