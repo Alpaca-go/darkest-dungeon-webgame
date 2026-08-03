@@ -15,6 +15,7 @@ import { saveGame, loadGame, clearGame } from '../src/persistence/save.js';
 import type { GameState, HeroInstance } from '../src/game-engine/expedition/types.js';
 import { GAME_STATE_VERSION } from '../src/game-engine/expedition/types.js';
 
+const STORAGE_KEY_V5 = 'dd-web-expedition-save-v5';
 const STORAGE_KEY_V4 = 'dd-web-expedition-save-v4';
 const STORAGE_KEY_V3 = 'dd-web-expedition-save-v3';
 const STORAGE_KEY_V2 = 'dd-web-expedition-save-v2';
@@ -45,7 +46,7 @@ function freshHero(id: string, name: string, archetype: HeroInstance['archetype'
 
 function freshV4State(): GameState {
   return {
-    version: 4,
+    version: 5 as any,
     mode: 'hamlet-overview',
     seed: 'save-test-seed',
     expedition: {
@@ -149,7 +150,7 @@ beforeEach(() => {
 });
 
 describe('Phase 4 P4.5 save: v4 读写', () => {
-  it('saveGame + loadGame:正常读写 v4 存档', () => {
+  it('saveGame + loadGame:正常读写 v5 存档', () => {
     const s = freshV4State();
     s.campaign = {
       id: 'camp_test', seed: 'save-test-seed', week: 5, gold: 6500,
@@ -159,11 +160,14 @@ describe('Phase 4 P4.5 save: v4 读写', () => {
       facilityStates: {} as any,
       status: 'active',
       trinketInventory: { ownedInstanceIds: [], equippedByHero: {} },
+      regionProgress: {} as any,
+      regionDiscovery: {} as any,
     };
+    s.hamlet = { ...s.hamlet, selectedRegionId: null };
     saveGame(s);
     const loaded = loadGame();
     expect(loaded).not.toBeNull();
-    expect(loaded!.version).toBe(4);
+    expect(loaded!.version).toBe(5);
     expect(loaded!.state.campaign?.week).toBe(5);
     expect(loaded!.state.campaign?.gold).toBe(6500);
     expect(loaded!.state.campaign?.trinketInventory).toBeDefined();
@@ -180,69 +184,83 @@ describe('Phase 4 P4.5 save: v4 读写', () => {
   });
 });
 
-describe('Phase 4 P4.5 save: v3 → v4 迁移', () => {
-  it('v3 存档自动迁移到 v4,补 Phase 4 字段', () => {
+describe('Phase 5 P5.2 save: v4 → v5 迁移', () => {
+  it('v4 存档自动迁移到 v5,补 Phase 5 字段', () => {
+    const v4State = freshV4State();
+    v4State.campaign = {
+      id: 'camp_test', seed: 'save-test-seed', week: 5, gold: 6500,
+      heirlooms: { portraits: 8, crests: 14 },
+      rosterCapacity: 8, rosterHeroIds: ['h.1'], deadHeroIds: [],
+      completedQuestIds: [], availableQuestIds: [], availableRecruitIds: [],
+      facilityStates: {} as any,
+      status: 'active',
+      trinketInventory: { ownedInstanceIds: [], equippedByHero: {} },
+    };
+    v4State.hamlet = {
+      mode: 'weekly-summary', recruitCandidates: [], weeklyQuestIds: [],
+      weeklyQuestDefs: {}, selectedQuestId: null, selectedPartyHeroIds: [],
+      provisionCart: {}, weeklyNotices: [],
+    };
+    const v4Save = { version: 4, state: v4State, savedAt: '2025-01-01T00:00:00.000Z' };
+    localStorage.setItem(STORAGE_KEY_V4, JSON.stringify(v4Save));
+
+    const loaded = loadGame();
+    expect(loaded).not.toBeNull();
+    expect(loaded!.version).toBe(5);
+    expect(loaded!.state.version).toBe(5);
+    // Phase 5 字段补全
+    expect(loaded!.state.campaign?.regionProgress).toBeDefined();
+    expect(Object.keys(loaded!.state.campaign!.regionProgress!)).toEqual(
+      expect.arrayContaining(['ruins', 'corrupted-woods', 'underground-burrows']),
+    );
+    expect(loaded!.state.campaign?.regionDiscovery).toBeDefined();
+    expect(loaded!.state.hamlet?.selectedRegionId).toBeNull();
+  });
+
+  it('v4 迁移后写 v5 + 清 v4', () => {
+    const v4Save = { version: 4, state: freshV4State(), savedAt: '2025-01-01T00:00:00.000Z' };
+    v4Save.state.campaign = {
+      id: 'camp_test', seed: 'save-test-seed', week: 1, gold: 0,
+      heirlooms: { portraits: 0, crests: 0 },
+      rosterCapacity: 8, rosterHeroIds: [], deadHeroIds: [],
+      completedQuestIds: [], availableQuestIds: [], availableRecruitIds: [],
+      facilityStates: {} as any,
+      status: 'active',
+      trinketInventory: { ownedInstanceIds: [], equippedByHero: {} },
+    };
+    localStorage.setItem(STORAGE_KEY_V4, JSON.stringify(v4Save));
+    loadGame();
+    expect(localStorage.getItem(STORAGE_KEY_V4)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEY_V5)).not.toBeNull();
+  });
+});
+
+describe('Phase 5 P5.2 save: v3 → v4 → v5 链式迁移', () => {
+  it('v3 链式迁移到 v5', () => {
     const v3Save = { version: 3, state: freshV3State(), savedAt: '2025-01-01T00:00:00.000Z' };
     localStorage.setItem(STORAGE_KEY_V3, JSON.stringify(v3Save));
 
     const loaded = loadGame();
     expect(loaded).not.toBeNull();
-    expect(loaded!.version).toBe(4);
-    expect(loaded!.state.version).toBe(GAME_STATE_VERSION);
-    // 远征状态保留
+    expect(loaded!.version).toBe(5);
+    expect(loaded!.state.version).toBe(5);
     expect(loaded!.state.party['h.1']!.stress).toBe(50);
     expect(loaded!.state.party['h.1']!.hp).toBe(15);
-    expect(loaded!.state.mode).toBe('node-introduction');
-    // Phase 4 字段补全
-    expect(loaded!.state.party['h.1']!.lockedPositiveQuirkIds).toEqual([]);
-    expect(loaded!.state.party['h.1']!.diseaseIds).toEqual([]);
-    expect(loaded!.state.party['h.1']!.equippedTrinketInstanceIds).toEqual([null, null]);
-    expect(loaded!.state.expedition.campState).toBeNull();
-    expect(loaded!.state.expedition.expeditionBuffs).toEqual([]);
-    expect(loaded!.state.expedition.campUsed).toBe(false);
-  });
-
-  it('v3 迁移后写 v4 + 清 v3', () => {
-    const v3Save = { version: 3, state: freshV3State(), savedAt: '2025-01-01T00:00:00.000Z' };
-    localStorage.setItem(STORAGE_KEY_V3, JSON.stringify(v3Save));
-    loadGame();
-    expect(localStorage.getItem(STORAGE_KEY_V3)).toBeNull();
-    expect(localStorage.getItem(STORAGE_KEY_V4)).not.toBeNull();
   });
 });
 
-describe('Phase 4 P4.5 save: v2 → v4 链式迁移', () => {
-  it('v2 存档链式迁移 v2 → v3 → v4', () => {
-    const v2Save = { version: 2, state: freshV2State(), savedAt: '2024-01-01T00:00:00.000Z' };
-    localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(v2Save));
-
-    const loaded = loadGame();
-    expect(loaded).not.toBeNull();
-    expect(loaded!.version).toBe(4);
-    // 远征状态保留
-    expect(loaded!.state.party['h.1']!.stress).toBe(80);
-    expect(loaded!.state.party['h.1']!.hp).toBe(5);
-    // campaign/hamlet 留空
-    expect(loaded!.state.campaign).toBeNull();
-    expect(loaded!.state.hamlet).toBeNull();
-    // Phase 4 字段补全
-    expect(loaded!.state.party['h.1']!.lockedPositiveQuirkIds).toEqual([]);
-    expect(loaded!.state.expedition.campUsed).toBe(false);
-  });
-});
-
-describe('Phase 4 P4.5 save: 错误版本拒绝', () => {
+describe('Phase 5 P5.2 save: 错误版本拒绝', () => {
   it('错误版本号 → null', () => {
     const bad = { version: 999, state: freshV4State(), savedAt: '2024-01-01T00:00:00.000Z' };
-    localStorage.setItem(STORAGE_KEY_V4, JSON.stringify(bad));
+    localStorage.setItem(STORAGE_KEY_V5, JSON.stringify(bad));
     expect(loadGame()).toBeNull();
   });
 
-  it('state.version !== GAME_STATE_VERSION → null', () => {
+  it('state.version !== 5 → null', () => {
     const s = freshV4State();
-    s.version = 2;
-    const bad = { version: 4, state: s, savedAt: '2024-01-01T00:00:00.000Z' };
-    localStorage.setItem(STORAGE_KEY_V4, JSON.stringify(bad));
+    s.version = 2 as any;
+    const bad = { version: 5, state: s, savedAt: '2024-01-01T00:00:00.000Z' };
+    localStorage.setItem(STORAGE_KEY_V5, JSON.stringify(bad));
     expect(loadGame()).toBeNull();
   });
 });
