@@ -252,6 +252,168 @@ a { color: #d8c69a; }
 .status-badge.blight { background: #1a3a1a; color: #b8e8a8; }
 .status-badge.stun { background: #3a3a1a; color: #e8e8a8; }
 .status-badge.mark { background: #3a1a3a; color: #e8a8e8; }
+.status-badge.affliction { background: #4a1e1e; color: #fdd; border: 1px solid #8a4040; }
+.status-badge.virtue { background: #1a3a3a; color: #aff; border: 1px solid #408080; }
+.status-badge.deaths-door { background: #2a0a0a; color: #ff5050; border: 1px solid #aa3030; font-weight: bold; animation: pulse-door 1.2s ease-in-out infinite; }
+.status-badge.dead { background: #0a0a0a; color: #555; border: 1px solid #333; }
+
+@keyframes pulse-door {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.hero-card.deaths-door {
+  border-color: #aa3030;
+  background: #1a0a0a;
+  animation: pulse-card 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-card {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(170, 48, 48, 0); }
+  50% { box-shadow: 0 0 8px 2px rgba(170, 48, 48, 0.4); }
+}
+
+.hero-card-stress {
+  width: 100%;
+  margin-top: 2px;
+}
+
+.stress-bar-bg {
+  background: #0a0805;
+  border: 1px solid #3a2a1a;
+  border-radius: 2px;
+  height: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.stress-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.stress-bar-fill.low { background: linear-gradient(90deg, #3a6a3a, #5a9a5a); }
+.stress-bar-fill.mid { background: linear-gradient(90deg, #8a7a2a, #d8c64a); }
+.stress-bar-fill.high { background: linear-gradient(90deg, #a85a2a, #e8a050); }
+.stress-bar-fill.critical { background: linear-gradient(90deg, #a8201a, #ff4030); animation: stress-pulse 0.8s ease-in-out infinite; }
+
+@keyframes stress-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.stress-text {
+  font-size: 9px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: #8a7858;
+  margin-top: 1px;
+}
+.stress-text.mid { color: #d8c64a; }
+.stress-text.high { color: #e8a050; }
+.stress-text.critical { color: #ff4030; font-weight: bold; }
+
+.recovery-stacks {
+  font-size: 9px;
+  color: #aa3030;
+  margin-top: 2px;
+}
+
+/* ============== Choice Card Phase 2 风险 ============== */
+.choice-card-risks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed #3a2a1a;
+}
+
+.choice-mental-risk,
+.choice-obedience-risk,
+.choice-death-risk {
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.choice-mental-risk.level-stable { background: #1a2a1a; color: #88cc88; }
+.choice-mental-risk.level-may-stress { background: #2a2a1a; color: #d8c64a; }
+.choice-mental-risk.level-high-stress { background: #3a2a1a; color: #e8a050; }
+.choice-mental-risk.level-may-resolve-check { background: #3a1a1a; color: #ff8060; }
+.choice-mental-risk.level-may-heart-attack { background: #4a0a0a; color: #ff4030; font-weight: bold; }
+
+.choice-obedience-risk.level-stable { background: #1a2a1a; color: #88cc88; }
+.choice-obedience-risk.level-may-refuse,
+.choice-obedience-risk.level-may-replace { background: #3a2a1a; color: #d8c64a; }
+.choice-obedience-risk.level-conflicts { background: #3a1a1a; color: #ff8060; }
+
+.choice-death-risk.level-safe { background: #1a2a1a; color: #88cc88; }
+.choice-death-risk.level-may-entered-door { background: #3a2a1a; color: #d8c64a; }
+.choice-death-risk.level-door-may-deathblow { background: #3a1a1a; color: #ff8060; }
+.choice-death-risk.level-extreme { background: #4a0a0a; color: #ff4030; font-weight: bold; }
+
+/* ============== Mental Overlay ============== */
+.mental-overlay-host {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadein 0.2s ease-out;
+}
+
+@keyframes fadein {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.mental-overlay {
+  background: #1a1410;
+  border: 2px solid #5a4628;
+  border-radius: 6px;
+  padding: 20px;
+  max-width: 90%;
+  width: 320px;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+}
+
+.mental-overlay.deathblow.failed { border-color: #aa3030; background: #1a0808; }
+.mental-overlay.deathblow.resisted { border-color: #5a8a30; background: #0a1a0a; }
+.mental-overlay.hero-death { border-color: #5a3030; background: #0a0808; }
+.mental-overlay.affliction-reveal { border-color: #8a4040; background: #1a0a0a; }
+.mental-overlay.virtue-reveal { border-color: #408080; background: #0a1a1a; }
+.mental-overlay.heart-attack { border-color: #aa3030; background: #1a0808; }
+.mental-overlay.deaths-door-entered { border-color: #aa3030; background: #0a0808; animation: pulse-overlay 0.8s ease-in-out 2; }
+.mental-overlay.resolve-check { border-color: #d8a05a; }
+
+@keyframes pulse-overlay {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.overlay-icon { font-size: 48px; margin-bottom: 12px; }
+.overlay-title { font-size: 16px; font-weight: 600; color: #f0d896; margin-bottom: 8px; }
+.overlay-detail { font-size: 12px; color: #b89a6a; line-height: 1.5; margin-bottom: 4px; }
+.overlay-cause { font-size: 11px; color: #8a7858; font-style: italic; }
+.overlay-tendency { font-size: 11px; color: #8a7858; margin-top: 6px; }
+.overlay-deltas {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #d8c69a;
+}
+.delta {
+  padding: 2px 4px;
+  background: #0a0805;
+  border-radius: 2px;
+}
 
 /* ============= Situation Panel ============= */
 .situation-panel {

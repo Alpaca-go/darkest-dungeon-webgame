@@ -250,6 +250,25 @@ export interface HeroInstance {
   conditions: HeroCondition[];
   /** 装备的技能 */
   skills: string[];
+  // ========== Phase 2 精神系统 ==========
+  /** 压力值 0-200 */
+  stress: number;
+  /** 意志状态 */
+  resolveState: ResolveState;
+  /** 折磨 id(若存在) */
+  afflictionId: string | null;
+  /** 美德 id(若存在) */
+  virtueId: string | null;
+  /** 是否在死亡之门(HP=0 但未死) */
+  atDeathsDoor: boolean;
+  /** Death's Door Recovery 累积层数(降低最大 HP 与死亡抗性) */
+  deathsDoorRecoveryStacks: number;
+  /** 致死打击抗性偏移(每抵抗一次 +0.05) */
+  deathblowPenalty: number;
+  /** 心脏病次数(用于美德缓冲) */
+  heartAttackCount: number;
+  /** 折磨/美德行为冷却(behaviorId -> 剩余触发次数) */
+  behaviorCooldowns: Record<string, number>;
 }
 
 // =====================================================================
@@ -332,6 +351,35 @@ export type RewardLevel = 'low' | 'medium' | 'high' | 'extreme' | 'stable' | 'de
 export interface RiskPreview {
   kind: 'injury' | 'starvation' | 'ambush' | 'trap' | 'consume' | 'lost-time' | 'formation-break' | 'enemy-react';
   severity: RiskLevel;
+  description: string;
+}
+
+/** 精神风险(SPEC §18.1) */
+export type MentalRiskLevel = 'stable' | 'may-stress' | 'high-stress' | 'may-resolve-check' | 'may-heart-attack';
+
+export interface MentalRiskPreview {
+  level: MentalRiskLevel;
+  /** 受影响英雄 id */
+  heroId?: string;
+  description: string;
+}
+
+/** 服从风险(SPEC §18.2) */
+export type ObedienceRiskLevel = 'stable' | 'may-refuse' | 'may-replace' | 'conflicts';
+
+export interface ObedienceRiskPreview {
+  level: ObedienceRiskLevel;
+  heroId?: string;
+  afflictionId?: string;
+  description: string;
+}
+
+/** 死亡风险(SPEC §18.3) */
+export type DeathRiskLevel = 'safe' | 'may-entered-door' | 'door-may-deathblow' | 'extreme';
+
+export interface DeathRiskPreview {
+  level: DeathRiskLevel;
+  heroId?: string;
   description: string;
 }
 
@@ -492,6 +540,12 @@ export interface GeneratedChoice {
   disabledReason?: string;
   visibleCosts: CostPreview[];
   visibleRisks: RiskPreview[];
+  /** Phase 2 新增:精神风险 */
+  mentalRisk?: MentalRiskPreview;
+  /** Phase 2 新增:服从风险(折磨可能拒绝/替换) */
+  obedienceRisk?: ObedienceRiskPreview;
+  /** Phase 2 新增:死亡风险 */
+  deathRisk?: DeathRiskPreview;
   tags: string[];
   /** 用于调试面板:为什么这个选项出现/消失 */
   reason: string;
@@ -626,4 +680,159 @@ export interface GameState {
   rng: RngState;
   /** 最后事务 id */
   lastTransactionId: string | null;
+  /** Phase 2:当前活跃的覆盖层(null 表示无) */
+  activeOverlay: MentalOverlay | null;
+  /** Phase 2:死亡记录 */
+  deathRecords: DeathRecord[];
+  /** Phase 2:精神事件广播队列(用于产生死亡之门紧急选择) */
+  pendingMentalFlags: PendingMentalFlag[];
+  /** Phase 2:本事务的派生事件深度(防止无限递归) */
+  derivedEventDepth: number;
+}
+
+// =====================================================================
+// Phase 2 精神系统类型 (SPEC §4, §5, §6, §7, §8)
+// =====================================================================
+
+/** 意志状态 */
+export type ResolveState =
+  | 'stable'
+  | 'resolve-check-pending'
+  | 'afflicted'
+  | 'virtuous'
+  | 'heart-attack-pending';
+
+/** 折磨行为触发器 (SPEC §7.1) */
+export type AfflictionTrigger =
+  | 'before-choice-confirm'
+  | 'after-choice-selected'
+  | 'before-hero-action'
+  | 'after-hero-damaged'
+  | 'after-ally-damaged'
+  | 'after-ally-death'
+  | 'on-route-choice'
+  | 'on-curio-choice'
+  | 'on-healing-choice'
+  | 'on-retreat-choice'
+  | 'on-resource-use'
+  | 'on-node-enter'
+  | 'on-encounter-round-start';
+
+/** 折磨行为结果 (SPEC §7.2) */
+export type AfflictionBehaviorEffect =
+  | 'refuse-choice'
+  | 'replace-primary-actor'
+  | 'replace-choice'
+  | 'add-party-stress'
+  | 'add-self-stress'
+  | 'move-self'
+  | 'consume-item'
+  | 'force-curio-interaction'
+  | 'block-retreat'
+  | 'skip-action'
+  | 'change-route';
+
+/** 折磨行为定义 */
+export interface AfflictionBehaviorDef {
+  id: string;
+  trigger: AfflictionTrigger;
+  effect: AfflictionBehaviorEffect;
+  /** 0-1 触发概率(SPEC §7.3 建议 10-25%) */
+  baseChance: number;
+  /** 与 hero 状态/选择标签的修饰(简化:用固定 ±) */
+  stressModifier?: number;
+  torchModifier?: number;
+  hpModifier?: number;
+  /** 描述(对玩家可见) */
+  narrativeHint: string;
+  /** 冷却(同 trigger 重复触发的最小间隔,以"决策数"计) */
+  cooldownDecisions?: number;
+}
+
+/** 折磨定义 */
+export interface AfflictionDefinition {
+  id: string;
+  name: string;
+  description: string;
+  /** 性格简述 */
+  archetype: 'paranoia' | 'fear' | 'masochism' | 'irrational';
+  /** 偏好(SPEC §6) */
+  coreTendency: string[];
+  /** 行为列表(每种至少 5 个) */
+  behaviors: AfflictionBehaviorDef[];
+  /** 主动效果(修饰符) */
+  passiveStressGain?: number; // 1 = 100% 即原始值,0.5 = -50%
+  passiveStressLoss?: number; // 1 = 不变
+}
+
+/** 美德行为定义 */
+export type VirtueBehaviorEffect =
+  | 'inspire-ally'           // 鼓舞队友 -stress
+  | 'shield-ally'           // 掩护队友(死亡之门时)
+  | 'detect-extra'          // 侦察发现额外机关
+  | 'reduce-penalty'        // 降低撤退/失败惩罚
+  | 'unlock-special-choice' // 解锁特殊选择
+  | 'guarantee-success'     // 保证某次行动成功
+  | 'lower-stress-pulse';   // 降低精神事件压力传播
+
+export interface VirtueBehaviorDef {
+  id: string;
+  trigger: AfflictionTrigger | 'on-stress-spike' | 'on-ally-at-deaths-door' | 'on-low-torch' | 'on-choice-failed';
+  effect: VirtueBehaviorEffect;
+  /** 0-1 触发概率(SPEC §9 主动行为) */
+  baseChance: number;
+  narrativeHint: string;
+  cooldownDecisions?: number;
+}
+
+/** 美德定义 */
+export interface VirtueDefinition {
+  id: string;
+  name: string;
+  description: string;
+  archetype: 'steadfast' | 'valorous' | 'focused';
+  coreTendency: string[];
+  behaviors: VirtueBehaviorDef[];
+  /** 主动效果 */
+  passiveStressGain?: number;
+  /** 心脏病缓冲 */
+  heartAttackBuffer?: boolean;
+}
+
+/** 死亡原因 */
+export type DeathCause = 'deathblow' | 'heart-attack' | 'trap' | 'hunger' | 'event' | 'other';
+
+/** 死亡记录(SPEC §17) */
+export interface DeathRecord {
+  id: string;
+  heroId: string;
+  heroName: string;
+  heroClassId: string;
+  /** 该英雄最终压力 */
+  resolveLevel: number;
+  expeditionId: string;
+  nodeId: string;
+  encounterId?: string;
+  cause: DeathCause;
+  sourceId?: string;
+  timestamp: string;
+  eventSequence: number;
+}
+
+/** 精神覆盖层(SPEC §20.2) */
+export type MentalOverlay =
+  | { kind: 'resolve-check'; heroId: string; fromStress: number }
+  | { kind: 'affliction-reveal'; heroId: string; afflictionId: string }
+  | { kind: 'virtue-reveal'; heroId: string; virtueId: string }
+  | { kind: 'heart-attack'; heroId: string; fromStress: number }
+  | { kind: 'deaths-door-entered'; heroId: string; cause: string }
+  | { kind: 'deathblow'; heroId: string; resisted: boolean; cause: string }
+  | { kind: 'hero-death'; heroId: string; cause: DeathCause }
+  | { kind: 'party-pulse'; sourceHeroId?: string; deltas: { heroId: string; amount: number }[]; reason: string };
+
+/** 派生精神事件标志(用于生成死亡之门紧急选择) */
+export interface PendingMentalFlag {
+  type: 'needs-emergency-care' | 'needs-cover' | 'needs-all-in' | 'needs-retreat';
+  heroId: string;
+  createdAt: number;
 }

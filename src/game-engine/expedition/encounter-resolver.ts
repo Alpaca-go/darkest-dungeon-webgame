@@ -25,6 +25,7 @@ import type { SkillDefinition } from '../types.js';
 import { ExpeditionContext } from './context.js';
 import type { BattleState as OldBattleState, BattleActor as OldBattleActor } from '../types.js';
 import type { DomainEvent as BattleDomainEvent } from '../domain-events.js';
+import { enterDeathsDoor, leaveDeathsDoor, checkDeathblow, applyStress } from '../mental/index.js';
 
 const MAX_AI_DECISION_RETRIES = 5;
 
@@ -38,7 +39,11 @@ export function startEncounter(
   const heroLoadout: Record<string, { skillId: string }[]> = {};
   for (const id of ['hero.crusader', 'hero.highwayman', 'hero.vestal', 'hero.plague_doctor']) {
     const party = state.party[id];
-    if (!party) throw new Error(`party missing ${id}`);
+    if (!party) continue; // 缺失英雄跳过
+    if (party.isDead) {
+      // Phase 2:永久死亡英雄在下次遭遇作为 corpse 占位
+      continue;
+    }
     heroes.push(heroToBattleActor(party));
     heroLoadout[id] = party.skills.map((s) => ({ skillId: s }));
   }
@@ -424,22 +429,59 @@ function pickEnemyAction(
   return null;
 }
 
-export function syncPartyFromEncounter(state: GameState, encounter: EncounterState): void {
+export function syncPartyFromEncounter(state: GameState, encounter: EncounterState, ctx?: ExpeditionContext): void {
   for (const id of encounter.heroActorIds) {
     const ba = encounter.actors[id];
     if (!ba) continue;
     const party = state.party[id];
     if (!party) continue;
+    // Phase 2:HP 转换(死亡之门 / 致死打击 / 离开死亡之门)
+    let nextHp = ba.hp;
+    let nextIsDead = ba.isDead;
+    if (ctx && !party.isDead) {
+      const prevHp = party.hp;
+      const prevAtDeathsDoor = party.atDeathsDoor;
+      // battle 层认为死了 → Phase 2 视角下要么进死亡之门要么致死打击
+      if (nextHp <= 0) {
+        if (prevAtDeathsDoor) {
+          // 已在死亡之门:进死亡之门(若还没)+ 致死打击检定
+          if (!party.atDeathsDoor) {
+            enterDeathsDoor(ctx, party, 'encounter-damage', prevHp);
+          }
+          nextHp = 0;
+          nextIsDead = false; // 让 Phase 2 决定
+          checkDeathblow(ctx, party, 'encounter');
+          // checkDeathblow 可能把 isDead 变成 true
+          nextIsDead = party.isDead;
+        } else {
+          // 第一次归零:进死亡之门
+          enterDeathsDoor(ctx, party, 'encounter-damage', prevHp);
+          nextHp = 0;
+          nextIsDead = false;
+        }
+      } else if (prevAtDeathsDoor && prevHp === 0) {
+        // 死亡之门被治愈
+        leaveDeathsDoor(ctx, party, nextHp);
+      }
+      // 同步 stress(来自 battle damage)
+      // ally damage:被攻击时 +3 stress
+      if (ba.hp < prevHp) {
+        const lost = prevHp - ba.hp;
+        if (lost > 0 && !party.isDead) {
+          applyStress(ctx, { type: 'apply-stress', heroId: party.id, amount: 3, source: 'encounter-damage' });
+        }
+      }
+    }
     state.party[id] = {
       ...party,
-      hp: ba.hp,
+      hp: nextHp,
       bleed: ba.bleed,
       blight: ba.blight,
       stun: ba.stun,
       mark: ba.mark,
       protBuff: ba.protBuff,
       cooldowns: ba.cooldowns,
-      isDead: ba.isDead,
+      isDead: nextIsDead,
     };
   }
 }

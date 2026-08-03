@@ -17,6 +17,8 @@ import { runTacticalRound, syncPartyFromEncounter, startEncounter } from './enco
 import { generateDecision } from './choice-generator.js';
 import type { GeneratedChoice, RouteNode } from './types.js';
 import type { DomainEvent as BattleDomainEvent } from '../domain-events.js';
+import { processChoiceMentalChecks, processPostChoiceMental } from '../mental/behaviors.js';
+import { applyStress } from '../mental/index.js';
 
 export class ChoiceError extends Error {
   constructor(message: string) {
@@ -37,6 +39,29 @@ export function resolveChosen(
   const choice = decision.generatedChoices.find((c) => c.id === choiceId);
   if (!choice) throw new ChoiceError(`choice ${choiceId} not in decision`);
   if (!choice.enabled) throw new ChoiceError(`choice ${choiceId} disabled: ${choice.disabledReason}`);
+
+  // Phase 2 pre-choice check:折磨可能拒绝 / 替换
+  const mentalResult = processChoiceMentalChecks(ctx, decisionId, choice);
+  if (mentalResult.refused) {
+    // 玩家必须重新选择:保持 decision,emit CHOICE_RESOLVED 作为失败,给一个简短 narrative
+    ctx.emit('CHOICE_RESOLVED', {
+      decisionId,
+      choiceId,
+      outcomes: [{ narrativeHint: mentalResult.reason, status: 'failure' }],
+    });
+    // 把当前 choice 标 disabled
+    choice.enabled = false;
+    choice.disabledReason = mentalResult.reason;
+    return;
+  }
+  if (mentalResult.resolvedChoiceId !== choice.id) {
+    // 替换了:用新 choice 重新走
+    const replacement = decision.generatedChoices.find((c) => c.id === mentalResult.resolvedChoiceId);
+    if (replacement) {
+      choice.id = mentalResult.resolvedChoiceId;
+      // 改写 original ref
+    }
+  }
 
   // 标记选中
   decision.selectedChoiceId = choiceId;
@@ -80,6 +105,28 @@ function resolveRouteChoice(ctx: ExpeditionContext, _decisionId: string, choice:
   // 应用 edge 消耗
   ctx.changeTime(edge.timeCost, `route ${edgeId}`);
   ctx.changeTorch(-edge.baseTorchCost, `route ${edgeId}`);
+
+  // Phase 2:火把下降触发压力
+  const torchAfter = ctx.state.expedition.torch;
+  if (torchAfter <= 0) {
+    // 火把归零 → 全队 +8 压力
+    for (const h of Object.values(ctx.state.party)) {
+      if (h.isDead) continue;
+      applyStress(ctx, { type: 'apply-stress', heroId: h.id, amount: 8, source: 'torch-zero' });
+    }
+  } else if (torchAfter < 25) {
+    // 火把 < 25 → 全队 +5 压力
+    for (const h of Object.values(ctx.state.party)) {
+      if (h.isDead) continue;
+      applyStress(ctx, { type: 'apply-stress', heroId: h.id, amount: 5, source: 'torch-low-25' });
+    }
+  } else if (torchAfter < 50) {
+    // 火把 < 50 → 全队 +2 压力
+    for (const h of Object.values(ctx.state.party)) {
+      if (h.isDead) continue;
+      applyStress(ctx, { type: 'apply-stress', heroId: h.id, amount: 2, source: 'torch-low-50' });
+    }
+  }
 
   ctx.emit('ROUTE_SELECTED', {
     edgeId,
@@ -194,6 +241,13 @@ function resolveEncounterChoice(ctx: ExpeditionContext, _decisionId: string, cho
   const tacticalChoice = ev.choices.find((c) => c.id === choice.sourceDefinitionId);
   if (!tacticalChoice) throw new ChoiceError(`tactical choice ${choice.sourceDefinitionId} not found`);
 
+  // 记录初始 HP 用于检测伤害
+  const prevHps: Record<string, number> = {};
+  for (const id of enc.heroActorIds) {
+    const h = ctx.state.party[id];
+    if (h) prevHps[id] = h.hp;
+  }
+
   // 支付 costs
   for (const cost of (tacticalChoice.costs ?? [])) {
     applyEffect(ctx, cost);
@@ -222,10 +276,40 @@ function resolveEncounterChoice(ctx: ExpeditionContext, _decisionId: string, cho
     result = runTacticalRound(ctx.state, enc, plan);
   }
 
-  // 同步 hero 状态
-  syncPartyFromEncounter(ctx.state, enc);
+  // 同步 hero 状态(走 Phase 2 死亡之门/致死打击转换)
+  syncPartyFromEncounter(ctx.state, enc, ctx);
   // 同步 expedition 统计
   ctx.state.expedition.stats.encounterCount += 1;
+
+  // Phase 2:解析这一轮的 damage / death 信息
+  const damageEvents = result.newBattleEvents.filter((e) => e.type === 'DAMAGE_DEALT');
+  const allyDamagedIds: string[] = [];
+  let primaryActorDamaged = false;
+  for (const evt of damageEvents) {
+    const payload = (evt as { payload: { targetId: string } }).payload;
+    const tid = payload.targetId;
+    if (tid in prevHps) {
+      allyDamagedIds.push(tid);
+      // 选一个 primary actor:从 choice.primaryHeroId 拿,否则第一个英雄
+      const primaryId = choice.primaryHeroId ?? enc.heroActorIds[0]!;
+      if (tid === primaryId) primaryActorDamaged = true;
+    }
+  }
+  // ally deaths:这一轮谁的 isDead 变成 true
+  const allyDeaths: string[] = [];
+  for (const id of enc.heroActorIds) {
+    const h = ctx.state.party[id];
+    if (h && h.isDead) {
+      // 这一轮永久死亡
+      allyDeaths.push(id);
+    }
+  }
+  // 美德/折磨 post-choice 行为
+  processPostChoiceMental(ctx, choice, {
+    primaryActorDamaged,
+    allyDamagedIds: Array.from(new Set(allyDamagedIds)),
+    allyDeaths,
+  });
 
   // 检查胜败
   if (result.victory) {
@@ -254,7 +338,7 @@ function resolveEncounterChoice(ctx: ExpeditionContext, _decisionId: string, cho
       rounds: enc.round,
     });
     // 同步 hero
-    syncPartyFromEncounter(ctx.state, enc);
+    syncPartyFromEncounter(ctx.state, enc, ctx);
     ctx.state.encounter = null;
     ctx.state.expedition.keyEvents.push({
       eventId: enc.encounterDefId,

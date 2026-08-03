@@ -25,6 +25,22 @@ import { countItem, setItemCount } from './context.js';
 import { assertGameInvariants } from './invariants.js';
 import { getEncounterDef } from '../../content/encounters.js';
 import { startEncounter } from './encounter-resolver.js';
+import {
+  applyStress,
+  runResolveCheck,
+  triggerResolveCheck,
+  triggerHeartAttack,
+  enterDeathsDoor,
+  checkDeathblow,
+  triggerPermanentDeath,
+  grantAffliction,
+  grantVirtue,
+  dismissOverlay,
+  AFFLICTIONS,
+  VIRTUES,
+} from '../mental/index.js';
+import { checkAfflictionBehaviors, checkVirtueBehaviors } from '../mental/behaviors.js';
+import type { AfflictionTrigger } from './types.js';
 
 export class CommandError extends Error {
   constructor(message: string) {
@@ -103,6 +119,40 @@ function applyCommand(ctx: ExpeditionContext, command: GameCommand): void {
       return cmdDebugForceEncounter(ctx, command.encounterDefId, command.commandId);
     case 'DEBUG_TELEPORT_NODE':
       return cmdDebugTeleportNode(ctx, command.nodeId, command.commandId);
+    // Phase 2 精神系统
+    case 'APPLY_STRESS':
+      return cmdApplyStress(ctx, command.heroId, command.amount, command.source, command.commandId);
+    case 'RESOLVE_CHECK':
+      return cmdResolveCheck(ctx, command.heroId, command.commandId);
+    case 'RESOLVE_AFFLICTION_BEHAVIOR':
+      return cmdResolveAfflictionBehavior(ctx, command.heroId, command.trigger, command.commandId);
+    case 'RESOLVE_VIRTUE_BEHAVIOR':
+      return cmdResolveVirtueBehavior(ctx, command.heroId, command.trigger, command.commandId);
+    case 'CHOOSE_DEATHS_DOOR_RESPONSE':
+      return resolveChosen(ctx, command.decisionId, command.choiceId);
+    case 'RESOLVE_DEATHBLOW':
+      return cmdResolveDeathblow(ctx, command.heroId, command.sourceId, command.commandId);
+    case 'CONFIRM_HERO_DEATH_RESULT':
+      return cmdConfirmHeroDeath(ctx, command.deathRecordId, command.commandId);
+    case 'DISMISS_OVERLAY':
+      return cmdDismissOverlay(ctx, command.commandId);
+    // Phase 2 调试
+    case 'DEBUG_SET_STRESS':
+      return cmdDebugSetStress(ctx, command.heroId, command.value, command.commandId);
+    case 'DEBUG_SET_DEATHS_DOOR':
+      return cmdDebugSetDeathsDoor(ctx, command.heroId, command.value, command.commandId);
+    case 'DEBUG_FORCE_AFFLICTION':
+      return cmdDebugForceAffliction(ctx, command.heroId, command.afflictionId, command.commandId);
+    case 'DEBUG_FORCE_VIRTUE':
+      return cmdDebugForceVirtue(ctx, command.heroId, command.virtueId, command.commandId);
+    case 'DEBUG_FORCE_HEART_ATTACK':
+      return cmdDebugForceHeartAttack(ctx, command.heroId, command.commandId);
+    case 'DEBUG_FORCE_DEATHBLOW_SUCCESS':
+      return cmdDebugForceDeathblowSuccess(ctx, command.heroId, command.commandId);
+    case 'DEBUG_FORCE_DEATHBLOW_FAIL':
+      return cmdDebugForceDeathblowFail(ctx, command.heroId, command.commandId);
+    case 'DEBUG_REVIVE_HERO':
+      return cmdDebugReviveHero(ctx, command.heroId, command.commandId);
   }
 }
 
@@ -140,6 +190,16 @@ function cmdStartExpedition(ctx: ExpeditionContext, _loadoutId: string, _command
       isDead: false,
       conditions: [],
       skills: p.skills.map((s) => s.skillId),
+      // Phase 2 精神字段
+      stress: 0,
+      resolveState: 'stable',
+      afflictionId: null,
+      virtueId: null,
+      atDeathsDoor: false,
+      deathsDoorRecoveryStacks: 0,
+      deathblowPenalty: 0,
+      heartAttackCount: 0,
+      behaviorCooldowns: {},
     };
   }
 
@@ -502,4 +562,152 @@ function regenerateNextDecision(ctx: ExpeditionContext): void {
   if (ctx.state.mode === 'event-choice' && !ctx.state.pendingDecision) {
     autoAdvance(ctx);
   }
+}
+
+// =============== Phase 2 精神命令 ===============
+
+function cmdApplyStress(ctx: ExpeditionContext, heroId: string, amount: number, source: string, _commandId: string): void {
+  void _commandId;
+  applyStress(ctx, { type: 'apply-stress', heroId, amount, source });
+}
+
+function cmdResolveCheck(ctx: ExpeditionContext, heroId: string, _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero || hero.isDead) return;
+  runResolveCheck(ctx, hero);
+}
+
+function cmdResolveAfflictionBehavior(ctx: ExpeditionContext, heroId: string, trigger: string, _commandId: string): void {
+  void _commandId;
+  checkAfflictionBehaviors(ctx, trigger as AfflictionTrigger, heroId);
+}
+
+function cmdResolveVirtueBehavior(ctx: ExpeditionContext, heroId: string, trigger: string, _commandId: string): void {
+  void _commandId;
+  checkVirtueBehaviors(ctx, trigger as AfflictionTrigger, heroId);
+}
+
+function cmdResolveDeathblow(ctx: ExpeditionContext, heroId: string, sourceId: string, _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero || hero.isDead) return;
+  checkDeathblow(ctx, hero, sourceId);
+}
+
+function cmdConfirmHeroDeath(ctx: ExpeditionContext, deathRecordId: string, _commandId: string): void {
+  void _commandId;
+  // 标记死亡记录为已确认(目前只是日志)
+  const rec = ctx.state.deathRecords.find((r) => r.id === deathRecordId);
+  if (!rec) return;
+  ctx.state.expedition.keyEvents.push({
+    eventId: `death_confirmed_${rec.heroId}`,
+    nodeId: rec.nodeId,
+    outcome: `${rec.heroName} 永久死亡已确认`,
+  });
+}
+
+function cmdDismissOverlay(ctx: ExpeditionContext, _commandId: string): void {
+  void _commandId;
+  dismissOverlay(ctx);
+}
+
+// =============== Phase 2 调试 ===============
+
+function cmdDebugSetStress(ctx: ExpeditionContext, heroId: string, value: number, _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero) return;
+  const v = Math.max(0, Math.min(200, value));
+  const from = hero.stress;
+  hero.stress = v;
+  if (v > from) {
+    ctx.emit('STRESS_APPLIED', { heroId, amount: v - from, source: 'debug', newTotal: v });
+  } else if (v < from) {
+    ctx.emit('STRESS_REDUCED', { heroId, amount: from - v, source: 'debug', newTotal: v });
+  }
+  if (from < 100 && v >= 100) triggerResolveCheck(ctx, hero);
+  if (from < 200 && v >= 200) triggerHeartAttack(ctx, hero);
+}
+
+function cmdDebugSetDeathsDoor(ctx: ExpeditionContext, heroId: string, value: boolean, _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero || hero.isDead) return;
+  if (value && !hero.atDeathsDoor) {
+    enterDeathsDoor(ctx, hero, 'debug', hero.hp);
+  } else if (!value && hero.atDeathsDoor) {
+    hero.atDeathsDoor = false;
+    hero.hp = Math.max(1, Math.floor(hero.maxHp * 0.5));
+    ctx.emit('DEATHS_DOOR_EXITED', { heroId, newHp: hero.hp, recoveryStacks: hero.deathsDoorRecoveryStacks });
+  }
+}
+
+function cmdDebugForceAffliction(ctx: ExpeditionContext, heroId: string, afflictionId: string, _commandId: string): void {
+  void _commandId;
+  if (!AFFLICTIONS[afflictionId]) return;
+  const hero = ctx.state.party[heroId];
+  if (!hero) return;
+  grantAffliction(ctx, hero, afflictionId);
+}
+
+function cmdDebugForceVirtue(ctx: ExpeditionContext, heroId: string, virtueId: string, _commandId: string): void {
+  void _commandId;
+  if (!VIRTUES[virtueId]) return;
+  const hero = ctx.state.party[heroId];
+  if (!hero) return;
+  grantVirtue(ctx, hero, virtueId);
+}
+
+function cmdDebugForceHeartAttack(ctx: ExpeditionContext, heroId: string, _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero) return;
+  hero.stress = 200;
+  triggerHeartAttack(ctx, hero);
+}
+
+function cmdDebugForceDeathblowSuccess(ctx: ExpeditionContext, heroId: string, _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero || hero.isDead) return;
+  if (!hero.atDeathsDoor) {
+    enterDeathsDoor(ctx, hero, 'debug', hero.hp);
+  }
+  // 模拟一次 damage 事件
+  ctx.emit('DAMAGE_APPLIED', { sourceId: 'debug', targetId: heroId, amount: 1, preHp: 0, postHp: 0, crit: false, blockedByProt: 0 });
+  // 强制成功:不调用 checkDeathblow,直接模拟一次
+  hero.deathblowPenalty += 0.05;
+  ctx.emit('DEATHBLOW_CHECK_STARTED', { heroId, finalResist: 1.0 });
+  ctx.emit('DEATHBLOW_RESISTED', { heroId, penalty: 0.05 });
+  ctx.emit('OVERLAY_SHOWN', { overlay: { kind: 'deathblow', heroId, resisted: true, cause: 'debug' } });
+}
+
+function cmdDebugForceDeathblowFail(ctx: ExpeditionContext, heroId: string, _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero || hero.isDead) return;
+  if (!hero.atDeathsDoor) {
+    enterDeathsDoor(ctx, hero, 'debug', hero.hp);
+  }
+  ctx.emit('OVERLAY_SHOWN', { overlay: { kind: 'deathblow', heroId, resisted: false, cause: 'debug' } });
+  triggerPermanentDeath(ctx, hero, 'deathblow', 'debug');
+}
+
+function cmdDebugReviveHero(ctx: ExpeditionContext, heroId: string, _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero) return;
+  hero.isDead = false;
+  hero.hp = hero.maxHp;
+  hero.atDeathsDoor = false;
+  hero.deathsDoorRecoveryStacks = 0;
+  hero.deathblowPenalty = 0;
+  hero.heartAttackCount = 0;
+  hero.afflictionId = null;
+  hero.virtueId = null;
+  hero.resolveState = 'stable';
+  hero.stress = 0;
+  hero.behaviorCooldowns = {};
+  ctx.emit('HERO_HP_CHANGED', { heroId, from: 0, to: hero.hp, source: 'debug-revive' });
 }

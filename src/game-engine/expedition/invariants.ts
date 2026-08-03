@@ -12,6 +12,7 @@
  * - 当前节点存在
  * - 遭遇内的 actor 计数与 heroActorIds 一致
  * - pendingDecision 必与 mode 匹配
+ * - Phase 2:压力 0-200 / 死亡之门 ↔ HP=0 / 折磨 XOR 美德 / 派生事件深度
  */
 
 import type { GameState } from './types.js';
@@ -73,6 +74,29 @@ export function assertGameInvariants(state: GameState): void {
     if (hero.rank < 1 || hero.rank > 4) {
       throw new InvariantViolation(`hero ${hero.id} rank out of range: ${hero.rank}`);
     }
+    // Phase 2 精神不变量
+    if (hero.stress < 0 || hero.stress > 200) {
+      throw new InvariantViolation(`hero ${hero.id} stress out of range: ${hero.stress}`);
+    }
+    if (hero.atDeathsDoor && hero.hp > 0) {
+      throw new InvariantViolation(`hero ${hero.id} atDeathsDoor but hp ${hero.hp} > 0`);
+    }
+    if (hero.hp === 0 && !hero.isDead && !hero.atDeathsDoor) {
+      throw new InvariantViolation(`hero ${hero.id} hp=0 but neither isDead nor atDeathsDoor`);
+    }
+    if (hero.afflictionId && hero.virtueId) {
+      throw new InvariantViolation(`hero ${hero.id} has both affliction and virtue`);
+    }
+    if (hero.afflictionId && hero.resolveState !== 'afflicted') {
+      throw new InvariantViolation(`hero ${hero.id} has affliction but resolveState=${hero.resolveState}`);
+    }
+    if (hero.virtueId && hero.resolveState !== 'virtuous') {
+      throw new InvariantViolation(`hero ${hero.id} has virtue but resolveState=${hero.resolveState}`);
+    }
+  }
+  // 派生事件深度(SPEC §11.3)
+  if (state.derivedEventDepth < 0 || state.derivedEventDepth > 200) {
+    throw new InvariantViolation(`derivedEventDepth out of range: ${state.derivedEventDepth}`);
   }
 
   // 背包

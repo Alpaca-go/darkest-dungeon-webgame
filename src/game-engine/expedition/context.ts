@@ -159,17 +159,43 @@ export class ExpeditionContext {
     const hero = this.state.party[heroId];
     if (!hero) throw new Error(`changeHeroHp: hero ${heroId} not found`);
     if (hero.isDead && delta < 0) return 0;
-    const from = hero.hp;
-    const to = Math.max(0, Math.min(hero.maxHp, hero.hp + delta));
+    const from = this.state.party[heroId]!.hp;
+    const to = Math.max(0, Math.min(hero.maxHp, from + delta));
     const actual = to - from;
     if (actual === 0) return 0;
     this.state.party[heroId] = { ...hero, hp: to };
     this.emit('HERO_HP_CHANGED', { heroId, from, to, source });
+    // Phase 2:HP 转换
     if (to === 0 && !hero.isDead) {
-      this.killHero(heroId, source);
-    } else if (to > 0 && hero.isDead) {
-      // 复活(理论上 v2.0 不存在)
-      this.state.party[heroId] = { ...this.state.party[heroId]!, isDead: false };
+      // HP 从 >0 跌到 0:进死亡之门
+      // (不再直接 killHero;永久死亡走 triggerPermanentDeath)
+      this.state.party[heroId]!.atDeathsDoor = true;
+      this.state.party[heroId]!.stress = Math.min(200, this.state.party[heroId]!.stress + 10);
+      this.emit('DEATHS_DOOR_ENTERED', { heroId, fromHp: from, source });
+      this.emit('PARTY_STRESS_PULSE_CREATED', {
+        sourceHeroId: heroId,
+        sourceEventId: 'deaths-door',
+        deltas: Object.values(this.state.party)
+          .filter((h) => h.id !== heroId && !h.isDead)
+          .map((h) => ({ heroId: h.id, amount: 7 })),
+        reason: `${this.state.party[heroId]!.name} 进入死亡之门`,
+      });
+      this.state.pendingMentalFlags.push({ type: 'needs-emergency-care', heroId, createdAt: Date.now() });
+      this.state.pendingMentalFlags.push({ type: 'needs-cover', heroId, createdAt: Date.now() });
+    } else if (to > 0 && hero.atDeathsDoor) {
+      // 死亡之门被治愈
+      const h = this.state.party[heroId]!;
+      h.atDeathsDoor = false;
+      h.deathsDoorRecoveryStacks += 1;
+      const maxHpPenalty = -Math.floor(h.maxHp * 0.1);
+      h.maxHp = Math.max(1, h.maxHp + maxHpPenalty);
+      h.dodge = Math.max(0, h.dodge - 2);
+      h.protection = Math.max(0, h.protection - 5);
+      h.deathblowPenalty += 0.05;
+      this.emit('DEATHS_DOOR_RECOVERY_APPLIED', {
+        heroId, maxHpDelta: maxHpPenalty, dodgeDelta: -2, protDelta: -5, deathResistDelta: -0.05,
+      });
+      this.emit('DEATHS_DOOR_EXITED', { heroId, newHp: to, recoveryStacks: h.deathsDoorRecoveryStacks });
     }
     return actual;
   }

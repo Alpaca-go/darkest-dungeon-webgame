@@ -46,6 +46,31 @@ export type ExpeditionDomainEventType =
   // 状态
   | 'STATUS_APPLIED'
   | 'STATUS_WORE_OFF'
+  // Phase 2: 精神
+  | 'STRESS_APPLIED'
+  | 'STRESS_REDUCED'
+  | 'RESOLVE_CHECK_STARTED'
+  | 'RESOLVE_CHECK_SUCCEEDED'
+  | 'AFFLICTION_GAINED'
+  | 'VIRTUE_GAINED'
+  | 'AFFLICTION_BEHAVIOR_TRIGGERED'
+  | 'AFFLICTION_CHOICE_REFUSED'
+  | 'AFFLICTION_CHOICE_REPLACED'
+  | 'VIRTUE_BEHAVIOR_TRIGGERED'
+  | 'PARTY_STRESS_PULSE_CREATED'
+  | 'HEART_ATTACK_TRIGGERED'
+  | 'DEATHS_DOOR_ENTERED'
+  | 'DEATHS_DOOR_EXITED'
+  | 'DEATHS_DOOR_RECOVERY_APPLIED'
+  | 'DEATHBLOW_CHECK_STARTED'
+  | 'DEATHBLOW_RESISTED'
+  | 'HERO_PERMANENTLY_DIED'
+  | 'DEATH_RECORD_CREATED'
+  | 'HERO_REMOVED_FROM_PARTY'
+  | 'TACTICAL_OPTIONS_REGENERATED'
+  // Phase 2: 覆盖层生命周期
+  | 'OVERLAY_SHOWN'
+  | 'OVERLAY_DISMISSED'
   // 事件
   | 'EVENT_STARTED'
   | 'CHOICE_SELECTED'
@@ -316,6 +341,130 @@ export type DecisionResolvedPayload = {
   choiceId: string;
 };
 
+// ----- Phase 2 精神事件 Payloads -----
+
+export type StressAppliedPayload = {
+  heroId: string;
+  amount: number;
+  source: string;
+  newTotal: number;
+};
+export type StressReducedPayload = {
+  heroId: string;
+  amount: number;
+  source: string;
+  newTotal: number;
+};
+export type ResolveCheckStartedPayload = {
+  heroId: string;
+  stress: number;
+  virtueChance: number;
+};
+export type ResolveCheckSucceededPayload = {
+  heroId: string;
+  result: 'afflicted' | 'virtuous';
+  afflictionId?: string;
+  virtueId?: string;
+};
+export type AfflictionGainedPayload = {
+  heroId: string;
+  afflictionId: string;
+  stress: number;
+};
+export type VirtueGainedPayload = {
+  heroId: string;
+  virtueId: string;
+  stress: number;
+};
+export type AfflictionBehaviorTriggeredPayload = {
+  heroId: string;
+  afflictionId: string;
+  behaviorId: string;
+  effect: string;
+  narrative: string;
+};
+export type AfflictionChoiceRefusedPayload = {
+  heroId: string;
+  afflictionId: string;
+  originalChoiceId: string;
+  reason: string;
+};
+export type AfflictionChoiceReplacedPayload = {
+  heroId: string;
+  afflictionId: string;
+  originalChoiceId: string;
+  newChoiceId: string;
+  reason: string;
+};
+export type VirtueBehaviorTriggeredPayload = {
+  heroId: string;
+  virtueId: string;
+  behaviorId: string;
+  effect: string;
+  narrative: string;
+};
+export type PartyStressPulseCreatedPayload = {
+  sourceHeroId?: string;
+  sourceEventId: string;
+  deltas: { heroId: string; amount: number }[];
+  reason: string;
+};
+export type HeartAttackTriggeredPayload = {
+  heroId: string;
+  fromStress: number;
+  virtueBuffer: boolean;
+  outcome: 'deaths-door' | 'permanent-death' | 'virtue-saved';
+};
+export type DeathsDoorEnteredPayload = {
+  heroId: string;
+  fromHp: number;
+  source: string;
+};
+export type DeathsDoorExitedPayload = {
+  heroId: string;
+  newHp: number;
+  recoveryStacks: number;
+};
+export type DeathsDoorRecoveryAppliedPayload = {
+  heroId: string;
+  maxHpDelta: number;
+  dodgeDelta: number;
+  protDelta: number;
+  deathResistDelta: number;
+};
+export type DeathblowCheckStartedPayload = {
+  heroId: string;
+  finalResist: number;
+};
+export type DeathblowResistedPayload = {
+  heroId: string;
+  penalty: number;
+};
+export type HeroPermanentlyDiedPayload = {
+  heroId: string;
+  deathRecordId: string;
+  cause: string;
+};
+export type DeathRecordCreatedPayload = {
+  deathRecordId: string;
+  heroId: string;
+  cause: string;
+};
+export type HeroRemovedFromPartyPayload = {
+  heroId: string;
+  newPartySize: number;
+};
+export type TacticalOptionsRegeneratedPayload = {
+  reason: string;
+  heroId?: string;
+};
+export type OverlayShownPayload = {
+  overlay: import('./types.js').MentalOverlay;
+};
+export type OverlayDismissedPayload = {
+  overlayKind: string;
+};
+
 // ----- 联合类型 -----
 
 export type ExpeditionDomainEvent =
@@ -373,4 +522,28 @@ export type ExpeditionDomainEvent =
   | BaseDomainEvent<'OBSTACLE_RESOLVED', ObstacleResolvedPayload>
   // 决策生命周期
   | BaseDomainEvent<'DECISION_CREATED', DecisionCreatedPayload>
-  | BaseDomainEvent<'DECISION_RESOLVED', DecisionResolvedPayload>;
+  | BaseDomainEvent<'DECISION_RESOLVED', DecisionResolvedPayload>
+  // Phase 2 精神
+  | BaseDomainEvent<'STRESS_APPLIED', StressAppliedPayload>
+  | BaseDomainEvent<'STRESS_REDUCED', StressReducedPayload>
+  | BaseDomainEvent<'RESOLVE_CHECK_STARTED', ResolveCheckStartedPayload>
+  | BaseDomainEvent<'RESOLVE_CHECK_SUCCEEDED', ResolveCheckSucceededPayload>
+  | BaseDomainEvent<'AFFLICTION_GAINED', AfflictionGainedPayload>
+  | BaseDomainEvent<'VIRTUE_GAINED', VirtueGainedPayload>
+  | BaseDomainEvent<'AFFLICTION_BEHAVIOR_TRIGGERED', AfflictionBehaviorTriggeredPayload>
+  | BaseDomainEvent<'AFFLICTION_CHOICE_REFUSED', AfflictionChoiceRefusedPayload>
+  | BaseDomainEvent<'AFFLICTION_CHOICE_REPLACED', AfflictionChoiceReplacedPayload>
+  | BaseDomainEvent<'VIRTUE_BEHAVIOR_TRIGGERED', VirtueBehaviorTriggeredPayload>
+  | BaseDomainEvent<'PARTY_STRESS_PULSE_CREATED', PartyStressPulseCreatedPayload>
+  | BaseDomainEvent<'HEART_ATTACK_TRIGGERED', HeartAttackTriggeredPayload>
+  | BaseDomainEvent<'DEATHS_DOOR_ENTERED', DeathsDoorEnteredPayload>
+  | BaseDomainEvent<'DEATHS_DOOR_EXITED', DeathsDoorExitedPayload>
+  | BaseDomainEvent<'DEATHS_DOOR_RECOVERY_APPLIED', DeathsDoorRecoveryAppliedPayload>
+  | BaseDomainEvent<'DEATHBLOW_CHECK_STARTED', DeathblowCheckStartedPayload>
+  | BaseDomainEvent<'DEATHBLOW_RESISTED', DeathblowResistedPayload>
+  | BaseDomainEvent<'HERO_PERMANENTLY_DIED', HeroPermanentlyDiedPayload>
+  | BaseDomainEvent<'DEATH_RECORD_CREATED', DeathRecordCreatedPayload>
+  | BaseDomainEvent<'HERO_REMOVED_FROM_PARTY', HeroRemovedFromPartyPayload>
+  | BaseDomainEvent<'TACTICAL_OPTIONS_REGENERATED', TacticalOptionsRegeneratedPayload>
+  | BaseDomainEvent<'OVERLAY_SHOWN', OverlayShownPayload>
+  | BaseDomainEvent<'OVERLAY_DISMISSED', OverlayDismissedPayload>;

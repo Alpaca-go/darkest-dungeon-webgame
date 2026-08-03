@@ -99,6 +99,44 @@ export function DebugPanel() {
               </div>
             ))}
           </div>
+          {/* Phase 2 精神调试 */}
+          <div className="debug-section">
+            <div className="label">精神 (Phase 2)</div>
+            {Object.values(state.party).map((h) => (
+              <div key={h.id} className="debug-row">
+                <span style={{ minWidth: 70 }}>{h.name}</span>
+                <span>压{h.stress}</span>
+                <button onClick={() => dispatch({ type: 'DEBUG_SET_STRESS', heroId: h.id, value: 0, commandId: makeCommandId('dbg') })}>0</button>
+                <button onClick={() => dispatch({ type: 'DEBUG_SET_STRESS', heroId: h.id, value: 100, commandId: makeCommandId('dbg') })}>100</button>
+                <button onClick={() => dispatch({ type: 'DEBUG_SET_STRESS', heroId: h.id, value: 200, commandId: makeCommandId('dbg') })}>200</button>
+                {h.isDead ? (
+                  <button onClick={() => dispatch({ type: 'DEBUG_REVIVE_HERO', heroId: h.id, commandId: makeCommandId('dbg') })}>复活</button>
+                ) : (
+                  <>
+                    {h.afflictionId ? (
+                      <span style={{ color: '#ff8060' }}>折磨</span>
+                    ) : (
+                      <button onClick={() => dispatch({ type: 'DEBUG_FORCE_AFFLICTION', heroId: h.id, afflictionId: 'affliction_paranoia', commandId: makeCommandId('dbg') })}>偏执</button>
+                    )}
+                    {h.virtueId ? (
+                      <span style={{ color: '#80d8d8' }}>美德</span>
+                    ) : (
+                      <button onClick={() => dispatch({ type: 'DEBUG_FORCE_VIRTUE', heroId: h.id, virtueId: 'virtue_steadfast', commandId: makeCommandId('dbg') })}>坚定</button>
+                    )}
+                    <button onClick={() => dispatch({ type: 'DEBUG_SET_DEATHS_DOOR', heroId: h.id, value: !h.atDeathsDoor, commandId: makeCommandId('dbg') })}>{h.atDeathsDoor ? '出死亡之门' : '入死亡之门'}</button>
+                    <button onClick={() => dispatch({ type: 'DEBUG_FORCE_DEATHBLOW_SUCCESS', heroId: h.id, commandId: makeCommandId('dbg') })}>致抵成</button>
+                    <button onClick={() => dispatch({ type: 'DEBUG_FORCE_DEATHBLOW_FAIL', heroId: h.id, commandId: makeCommandId('dbg') })}>致抵败</button>
+                  </>
+                )}
+              </div>
+            ))}
+            <div className="debug-row">
+              <button onClick={() => dispatch({ type: 'DEBUG_FORCE_HEART_ATTACK', heroId: 'hero.crusader', commandId: makeCommandId('dbg') })}>十字军心脏病</button>
+            </div>
+            <div className="debug-row">
+              <span>死亡记录: {state.deathRecords.length}</span>
+            </div>
+          </div>
           <div className="debug-section">
             <div className="label">站位</div>
             {Object.values(state.party).map((h) => (

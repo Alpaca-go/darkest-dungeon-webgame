@@ -77,8 +77,8 @@ function deepCopyLoadouts(loadouts: Record<string, EquippedSkill[]>): Record<str
 }
 
 function validateParty(party: BattleActor[], side: Side): void {
-  if (party.length !== 4) {
-    throw new Error(`createBattle: ${side} must have exactly 4 actors, got ${party.length}`);
+  if (party.length < 1 || party.length > 4) {
+    throw new Error(`createBattle: ${side} must have 1-4 actors, got ${party.length}`);
   }
   const ranks = new Set<Rank>();
   for (const a of party) {

@@ -45,6 +45,15 @@ export type GameCommand =
   | { type: 'REQUEST_RETREAT'; commandId: string }
   | { type: 'CONFIRM_RETREAT'; commandId: string }
   | { type: 'CONTINUE_AFTER_RESULT'; commandId: string }
+  // Phase 2:精神系统命令(由规则引擎自动派发,UI 不直接调用)
+  | { type: 'APPLY_STRESS'; heroId: string; amount: number; source: string; commandId: string }
+  | { type: 'RESOLVE_CHECK'; heroId: string; commandId: string }
+  | { type: 'RESOLVE_AFFLICTION_BEHAVIOR'; heroId: string; trigger: string; commandId: string }
+  | { type: 'RESOLVE_VIRTUE_BEHAVIOR'; heroId: string; trigger: string; commandId: string }
+  | { type: 'CHOOSE_DEATHS_DOOR_RESPONSE'; decisionId: string; choiceId: string; commandId: string }
+  | { type: 'RESOLVE_DEATHBLOW'; heroId: string; sourceId: string; commandId: string }
+  | { type: 'CONFIRM_HERO_DEATH_RESULT'; deathRecordId: string; commandId: string }
+  | { type: 'DISMISS_OVERLAY'; commandId: string }
   // 调试
   | { type: 'DEBUG_SET_TORCH'; value: number; commandId: string }
   | { type: 'DEBUG_SET_FOOD'; value: number; commandId: string }
@@ -54,7 +63,16 @@ export type GameCommand =
   | { type: 'DEBUG_TRIGGER_HUNGER'; commandId: string }
   | { type: 'DEBUG_TRIGGER_TRAP'; commandId: string }
   | { type: 'DEBUG_FORCE_ENCOUNTER'; encounterDefId: string; commandId: string }
-  | { type: 'DEBUG_TELEPORT_NODE'; nodeId: string; commandId: string };
+  | { type: 'DEBUG_TELEPORT_NODE'; nodeId: string; commandId: string }
+  // Phase 2 调试
+  | { type: 'DEBUG_SET_STRESS'; heroId: string; value: number; commandId: string }
+  | { type: 'DEBUG_SET_DEATHS_DOOR'; heroId: string; value: boolean; commandId: string }
+  | { type: 'DEBUG_FORCE_AFFLICTION'; heroId: string; afflictionId: string; commandId: string }
+  | { type: 'DEBUG_FORCE_VIRTUE'; heroId: string; virtueId: string; commandId: string }
+  | { type: 'DEBUG_FORCE_HEART_ATTACK'; heroId: string; commandId: string }
+  | { type: 'DEBUG_FORCE_DEATHBLOW_SUCCESS'; heroId: string; commandId: string }
+  | { type: 'DEBUG_FORCE_DEATHBLOW_FAIL'; heroId: string; commandId: string }
+  | { type: 'DEBUG_REVIVE_HERO'; heroId: string; commandId: string };
 
 export type CommandType = GameCommand['type'];
 

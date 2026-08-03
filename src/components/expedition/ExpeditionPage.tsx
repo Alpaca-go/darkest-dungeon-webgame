@@ -28,6 +28,7 @@ import { InventoryDrawer } from './InventoryDrawer.js';
 import { HeroDetailDrawer } from './HeroDetailDrawer.js';
 import { ExpeditionLogDrawer } from './ExpeditionLogDrawer.js';
 import { RoutePreviewDrawer } from './RoutePreviewDrawer.js';
+import { MentalOverlayHost } from './MentalOverlay.js';
 
 export function ExpeditionPage() {
   const state = useGameStore((s) => s.state);
@@ -154,6 +155,9 @@ export function ExpeditionPage() {
 
       {/* Debug Panel */}
       {debugOpen && <DebugPanel />}
+
+      {/* Phase 2 精神事件覆盖层 */}
+      {state.activeOverlay && <MentalOverlayHost />}
     </div>
   );
 }

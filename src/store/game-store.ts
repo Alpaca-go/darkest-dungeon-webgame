@@ -71,6 +71,11 @@ function emptyGameState(seed: string): GameState {
     eventLog: [],
     rng: rng.state,
     lastTransactionId: null,
+    // Phase 2
+    activeOverlay: null,
+    deathRecords: [],
+    pendingMentalFlags: [],
+    derivedEventDepth: 0,
   };
 }
 

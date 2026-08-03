@@ -28,6 +28,10 @@ import type {
   RiskPreview,
   RiskLevel,
   ScoutLevel,
+  MentalRiskPreview,
+  ObedienceRiskPreview,
+  DeathRiskPreview,
+  HeroInstance,
 } from './types.js';
 
 let decisionCounter = 0;
@@ -152,6 +156,117 @@ function encounterChoiceToGenerated(
   };
 }
 
+// =============== Phase 2 风险预览 ===============
+
+/** 给一个 choice 计算精神 / 服从 / 死亡风险预览 */
+export function computeChoiceRiskPreviews(
+  ctx: ExpeditionContext,
+  primaryHeroId: string | undefined,
+  tags: string[],
+): { mentalRisk?: MentalRiskPreview; obedienceRisk?: ObedienceRiskPreview; deathRisk?: DeathRiskPreview } {
+  if (!primaryHeroId) return {};
+  const hero = ctx.state.party[primaryHeroId];
+  if (!hero || hero.isDead) return {};
+
+  const out: { mentalRisk?: MentalRiskPreview; obedienceRisk?: ObedienceRiskPreview; deathRisk?: DeathRiskPreview } = {};
+
+  // 精神风险:根据 hero stress / torch / 选择标签
+  if (hero.stress >= 100) {
+    out.mentalRisk = { level: 'may-resolve-check', heroId: hero.id, description: '精神临界,可能进入折磨或美德' };
+  } else if (hero.stress >= 75) {
+    out.mentalRisk = { level: 'high-stress', heroId: hero.id, description: '精神高度紧张' };
+  } else if (hero.stress >= 40) {
+    out.mentalRisk = { level: 'may-stress', heroId: hero.id, description: '可能产生压力' };
+  } else {
+    out.mentalRisk = { level: 'stable', heroId: hero.id, description: '精神稳定' };
+  }
+
+  // 服从风险:折磨
+  if (hero.afflictionId) {
+    const conflict = hasAfflictionConflict(hero, tags);
+    if (conflict) {
+      out.obedienceRisk = {
+        level: 'conflicts',
+        heroId: hero.id,
+        afflictionId: hero.afflictionId,
+        description: `当前折磨(${hero.afflictionId})与该选择冲突`,
+      };
+    } else {
+      out.obedienceRisk = {
+        level: 'may-replace',
+        heroId: hero.id,
+        afflictionId: hero.afflictionId,
+        description: '折磨英雄可能替换或拒绝',
+      };
+    }
+  } else {
+    out.obedienceRisk = { level: 'stable', heroId: hero.id, description: '精神稳定,会服从' };
+  }
+
+  // 死亡风险
+  if (hero.atDeathsDoor) {
+    out.deathRisk = {
+      level: 'door-may-deathblow',
+      heroId: hero.id,
+      description: '该英雄处于死亡之门,任何伤害都可能致死',
+    };
+  } else if (hero.hp > 0 && hero.hp < hero.maxHp * 0.25) {
+    out.deathRisk = {
+      level: 'may-entered-door',
+      heroId: hero.id,
+      description: '该英雄生命垂危,可能进入死亡之门',
+    };
+  } else {
+    out.deathRisk = { level: 'safe', heroId: hero.id, description: '安全' };
+  }
+  return out;
+}
+
+function hasAfflictionConflict(hero: HeroInstance, tags: string[]): boolean {
+  // 简化:不同折磨与不同 tag 冲突
+  if (tags.includes('healing') || tags.includes('heal')) {
+    if (hero.afflictionId === 'affliction_paranoia') return true;
+    if (hero.afflictionId === 'affliction_masochism') return true;
+  }
+  if (tags.includes('route') && hero.afflictionId === 'affliction_fear') return true;
+  if (tags.includes('retreat') && hero.afflictionId === 'affliction_masochism') return true;
+  return false;
+}
+
+/** 给一个 encounters 注入死亡之门紧急选择 */
+export function injectEmergencyChoices(ctx: ExpeditionContext, choices: GeneratedChoice[]): GeneratedChoice[] {
+  const deathsDoor = Object.values(ctx.state.party).filter((h) => h.atDeathsDoor && !h.isDead);
+  if (deathsDoor.length === 0) return choices;
+  const out: GeneratedChoice[] = [...choices];
+  for (const hero of deathsDoor) {
+    out.unshift({
+      id: `emergency-care-${hero.id}`,
+      sourceDefinitionId: 'emergency.care',
+      title: `紧急救治 ${hero.name}`,
+      description: `${hero.name} 已倒下。任何治疗都可能被敌方打断。`,
+      enabled: true,
+      primaryHeroId: hero.id,
+      visibleCosts: [],
+      visibleRisks: [{ kind: 'enemy-react', severity: 'high', description: '敌人获得较完整行动' }],
+      tags: ['emergency', 'care', `hero:${hero.id}`],
+      reason: `deaths-door:${hero.id}`,
+    });
+    out.unshift({
+      id: `emergency-cover-${hero.id}`,
+      sourceDefinitionId: 'emergency.cover',
+      title: `掩护 ${hero.name}`,
+      description: '有人会吸引火力,降低伤员被攻击概率。',
+      enabled: true,
+      primaryHeroId: hero.id,
+      visibleCosts: [],
+      visibleRisks: [{ kind: 'injury', severity: 'high', description: '掩护者承受更多风险' }],
+      tags: ['emergency', 'cover', `hero:${hero.id}`],
+      reason: `deaths-door:${hero.id}`,
+    });
+  }
+  return out;
+}
+
 // =============== 公共入口 ===============
 
 /** 给定 GameState 和当前节点,生成 PendingDecision */
@@ -226,6 +341,15 @@ function generateRouteChoice(ctx: ExpeditionContext, forkId: string): PendingDec
     // 隐藏信息:未 fully-scouted 时只显示风险,fully-scouted 显示完整描述
     if (ctx.state.expedition.scoutLevel !== 'fully-scouted') {
       gen.description = `[${RISK_LABEL[opt.riskTag]} / ${REWARD_LABEL[opt.rewardTag] ?? opt.rewardTag}]`;
+    }
+    // Phase 2 风险预览
+    const primary = pickAlivePrimaryActor(ctx);
+    if (primary) {
+      gen.primaryHeroId = primary;
+      const previews = computeChoiceRiskPreviews(ctx, primary, gen.tags);
+      if (previews.mentalRisk) gen.mentalRisk = previews.mentalRisk;
+      if (previews.obedienceRisk) gen.obedienceRisk = previews.obedienceRisk;
+      if (previews.deathRisk) gen.deathRisk = previews.deathRisk;
     }
     choices.push(gen);
   }
@@ -309,6 +433,17 @@ function generateEventChoice(ctx: ExpeditionContext, eventId: string): PendingDe
       gen.enabled = false;
       gen.disabledReason = '不满足条件';
     }
+    // Phase 2 风险预览:事件选择用最低 HP 英雄作主代理
+    const primary = Object.values(ctx.state.party)
+      .filter((h) => !h.isDead)
+      .sort((a, b) => a.hp - b.hp)[0]?.id;
+    if (primary) {
+      const previews = computeChoiceRiskPreviews(ctx, primary, gen.tags);
+      if (previews.mentalRisk) gen.mentalRisk = previews.mentalRisk;
+      if (previews.obedienceRisk) gen.obedienceRisk = previews.obedienceRisk;
+      if (previews.deathRisk) gen.deathRisk = previews.deathRisk;
+      gen.primaryHeroId = primary;
+    }
     return gen;
   });
   return baseDecision('event', eventId, limitAndSort(choices));
@@ -337,18 +472,41 @@ function generateEncounterChoice(ctx: ExpeditionContext, encounterId: string): P
     const ev = getEventDef(id);
     if (!ev) continue;
     for (const c of ev.choices) {
-      const gen = encounterChoiceToGenerated(encounterId, id, c);
+      // Phase 2:选择主要执行者(选 alive,非 deaths door 的最高 rank 英雄)
+      const primary = pickAlivePrimaryActor(ctx);
+      const gen = encounterChoiceToGenerated(encounterId, id, c, primary);
       // 检查条件
       const ok = (c.conditions ?? []).every((cond) => evalCondition(ctx, cond));
       if (!ok) {
         gen.enabled = false;
         gen.disabledReason = '不满足条件';
       }
+      // Phase 2 风险预览
+      const previews = computeChoiceRiskPreviews(ctx, primary, gen.tags);
+      if (previews.mentalRisk) gen.mentalRisk = previews.mentalRisk;
+      if (previews.obedienceRisk) gen.obedienceRisk = previews.obedienceRisk;
+      if (previews.deathRisk) gen.deathRisk = previews.deathRisk;
       choices.push(gen);
     }
   }
 
-  return baseDecision('encounter', encounterId, limitAndSort(choices));
+  // Phase 2:注入死亡之门紧急选择
+  const withEmergency = injectEmergencyChoices(ctx, choices);
+
+  return baseDecision('encounter', encounterId, limitAndSort(withEmergency));
+}
+
+/** 选一个还活着的、不是死亡之门的最高 rank 英雄作为主要执行者 */
+function pickAlivePrimaryActor(ctx: ExpeditionContext): string | undefined {
+  const alive = Object.values(ctx.state.party)
+    .filter((h) => !h.isDead && !h.atDeathsDoor)
+    .sort((a, b) => a.rank - b.rank);
+  if (alive.length === 0) {
+    // 退而求其次:含死亡之门英雄
+    const any = Object.values(ctx.state.party).filter((h) => !h.isDead);
+    return any[0]?.id;
+  }
+  return alive[0]?.id;
 }
 
 // =============== Inventory Choice ===============
