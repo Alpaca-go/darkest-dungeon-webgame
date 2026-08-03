@@ -76,6 +76,13 @@ import {
   treatDisease,
   getDiseaseDef,
 } from '../diseases/index.js';
+import {
+  lootTrinket,
+  equipTrinket,
+  unequipTrinket,
+  processDeathRecovery,
+  buildTrinketDefCache,
+} from '../trinkets/index.js';
 
 export class CommandError extends Error {
   constructor(message: string) {
@@ -236,6 +243,15 @@ function applyCommand(ctx: ExpeditionContext, command: GameCommand): void {
       return cmdGrantDisease(ctx, command.heroId, command.diseaseId, command.source, command.commandId);
     case 'TREAT_DISEASE':
       return cmdTreatDisease(ctx, command.heroId, command.diseaseId, command.commandId);
+    // Phase 4 饰品
+    case 'LOOT_TRINKET':
+      return cmdLootTrinket(ctx, command.definitionId, command.week, command.source, command.commandId);
+    case 'EQUIP_TRINKET':
+      return cmdEquipTrinket(ctx, command.heroId, command.instanceId, command.slotIndex, command.commandId);
+    case 'UNEQUIP_TRINKET':
+      return cmdUnequipTrinket(ctx, command.heroId, command.slotIndex, command.commandId);
+    case 'PROCESS_DEATH_RECOVERY':
+      return cmdProcessDeathRecovery(ctx, command.heroId, command.choice, command.commandId);
   }
 }
 
@@ -369,6 +385,7 @@ function cmdStartExpedition(ctx: ExpeditionContext, _loadoutId: string, _command
       availableQuestIds: [],
       availableRecruitIds: [],
       facilityStates: structuredClone(INITIAL_FACILITY_STATES),
+      trinketInventory: { ownedInstanceIds: [], equippedByHero: {} },
       status: 'active',
     };
     const hamlet: HamletState = {
@@ -1242,4 +1259,83 @@ function cmdTreatDisease(ctx: ExpeditionContext, heroId: string, diseaseId: stri
   }
   ctx.state.campaign.gold -= result.costGold;
   ctx.emit('DISEASE_TREATED', { heroId, diseaseId, costGold: result.costGold });
+}
+
+// =============== Phase 4 饰品 ===============
+
+/** 战利品掉一件饰品(任务完成 / 精英 / 隐藏节点触发) */
+function cmdLootTrinket(ctx: ExpeditionContext, definitionId: string, week: number, source: string, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) {
+    if (!ctx.state.campaign) {
+      // campaign null 时直接静默失败(P1/P2 旧测试不需要)
+      return;
+    }
+  }
+  const inventory = ctx.state.campaign!.trinketInventory ?? (ctx.state.campaign!.trinketInventory = { ownedInstanceIds: [], equippedByHero: {} });
+  const r = lootTrinket(inventory, definitionId, week, source);
+  if (!r.ok) throw new CommandError(`loot trinket failed: ${r.reason}`);
+  ctx.emit('TRINKET_LOOTED', {
+    trinketInstanceId: r.instance.id,
+    definitionId: r.instance.definitionId,
+    source,
+  });
+}
+
+/** 装备饰品 */
+function cmdEquipTrinket(ctx: ExpeditionContext, heroId: string, instanceId: string, slotIndex: number, _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero) throw new CommandError(`hero not found: ${heroId}`);
+  if (!ctx.state.campaign) throw new CommandError('no campaign state');
+  const inventory = ctx.state.campaign.trinketInventory;
+  if (!inventory) throw new CommandError('no trinket inventory');
+  if (!inventory.ownedInstanceIds.includes(instanceId)) {
+    throw new CommandError(`trinket instance not in inventory: ${instanceId}`);
+  }
+  const cache = buildTrinketDefCache(inventory);
+  const r = equipTrinket(hero, instanceId, slotIndex, cache);
+  if (!r.ok) throw new CommandError(`equip failed: ${r.reason}`);
+  // 同步 equippedByHero
+  if (!inventory.equippedByHero[heroId]) inventory.equippedByHero[heroId] = [null, null];
+  inventory.equippedByHero[heroId]![slotIndex] = instanceId;
+  ctx.emit('TRINKET_EQUIPPED', { heroId, trinketInstanceId: instanceId, slotIndex });
+}
+
+/** 卸下饰品 */
+function cmdUnequipTrinket(ctx: ExpeditionContext, heroId: string, slotIndex: number, _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero) throw new CommandError(`hero not found: ${heroId}`);
+  if (!ctx.state.campaign) throw new CommandError('no campaign state');
+  const r = unequipTrinket(hero, slotIndex);
+  if (!r.ok) throw new CommandError(`unequip failed: ${r.reason}`);
+  const inventory = ctx.state.campaign.trinketInventory;
+  if (inventory && inventory.equippedByHero[heroId]) {
+    inventory.equippedByHero[heroId]![slotIndex] = null;
+  }
+  ctx.emit('TRINKET_UNEQUIPPED', { heroId, slotIndex });
+}
+
+/** 死亡英雄饰品回收(SPEC §8.2) */
+function cmdProcessDeathRecovery(ctx: ExpeditionContext, heroId: string, choice: 'recover-one' | 'abandon-all' | 'emergency-retreat', _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero) throw new CommandError(`hero not found: ${heroId}`);
+  if (!ctx.state.campaign) throw new CommandError('no campaign state');
+  const inventory = ctx.state.campaign.trinketInventory;
+  if (!inventory) throw new CommandError('no trinket inventory');
+  const result = processDeathRecovery(hero, choice);
+  // 同步 inventory.equippedByHero
+  inventory.equippedByHero[heroId] = [null, null];
+  // 回收的 instance 留在 ownedInstanceIds
+  // 放弃的 instance 从 ownedInstanceIds 移除
+  for (const abandoned of result.abandoned) {
+    const idx = inventory.ownedInstanceIds.indexOf(abandoned);
+    if (idx >= 0) inventory.ownedInstanceIds.splice(idx, 1);
+    ctx.emit('TRINKET_LOST', { heroId, trinketInstanceId: abandoned, cause: 'death' });
+  }
+  for (const recovered of result.recovered) {
+    ctx.emit('TRINKET_RECOVERED', { heroId, trinketInstanceId: recovered });
+  }
 }

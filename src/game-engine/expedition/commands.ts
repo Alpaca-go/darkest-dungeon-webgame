@@ -69,6 +69,11 @@ export type GameCommand =
   | { type: 'LOCK_POSITIVE_QUIRK'; heroId: string; quirkId: string; commandId: string }
   | { type: 'GRANT_DISEASE'; heroId: string; diseaseId: string; source: string; commandId: string }
   | { type: 'TREAT_DISEASE'; heroId: string; diseaseId: string; commandId: string }
+  // Phase 4 饰品
+  | { type: 'LOOT_TRINKET'; definitionId: string; week: number; source: string; commandId: string }
+  | { type: 'EQUIP_TRINKET'; heroId: string; instanceId: string; slotIndex: number; commandId: string }
+  | { type: 'UNEQUIP_TRINKET'; heroId: string; slotIndex: number; commandId: string }
+  | { type: 'PROCESS_DEATH_RECOVERY'; heroId: string; choice: 'recover-one' | 'abandon-all' | 'emergency-retreat'; commandId: string }
   // Phase 2:精神系统命令(由规则引擎自动派发,UI 不直接调用)
   | { type: 'APPLY_STRESS'; heroId: string; amount: number; source: string; commandId: string }
   | { type: 'RESOLVE_CHECK'; heroId: string; commandId: string }

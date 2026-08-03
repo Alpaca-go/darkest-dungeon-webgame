@@ -304,6 +304,8 @@ export interface HeroInstance {
   activityState?: 'available' | 'selected-for-party' | 'stress-treatment' | 'medical-treatment' | 'training' | 'missing' | 'dead';
   /** 正在使用哪个设施 */
   assignedFacilityId?: string | null;
+  /** Phase 4:装备的饰品 instance id 列表(2 槽) */
+  equippedTrinketInstanceIds?: (string | null)[];
   /** 活动剩余周数(0 表示无活动) */
   activityWeeksRemaining?: number;
   /** 远征次数 */

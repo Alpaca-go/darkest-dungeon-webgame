@@ -59,6 +59,8 @@ export interface CampaignState {
   availableRecruitIds: string[];
   /** 设施状态(按设施 id) */
   facilityStates: Record<string, FacilityState>;
+  /** Phase 4:饰品仓库(SPEC §7.5) */
+  trinketInventory?: import('../trinkets/types.js').TrinketInventoryState;
   status: CampaignStatus;
 }
 
