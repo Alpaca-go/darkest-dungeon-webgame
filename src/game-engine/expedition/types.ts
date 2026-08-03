@@ -458,7 +458,8 @@ export type RuleEffectKind =
   | 'apply-status' | 'remove-status' | 'move-hero' | 'set-hero-rank'
   | 'kill-hero' | 'reveal-next-node'
   | 'complete-objective' | 'fail-expedition' | 'succeed-expedition'
-  | 'request-retreat';
+  | 'request-retreat'
+  | 'apply-stress';
 
 export type HeroSelector = 'specific' | 'lowest-hp' | 'highest-hp' | 'all-alive' | 'front-rank' | 'back-rank';
 

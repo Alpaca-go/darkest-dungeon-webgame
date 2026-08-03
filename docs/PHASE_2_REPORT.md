@@ -356,16 +356,16 @@ if (choice.tags.includes('retreat')) triggersToCheck.push('on-retreat-choice');
 
 ## 8.2 Phase 3 风险评估
 
-| 风险 | 影响 | 建议 |
-|------|------|------|
-| 庄园里 `HeroInstance` 仍带 `isDead / atDeathsDoor / stress` | 庄园英雄选择 UI 需隐藏死英雄 | Phase 3 加 hero 状态机 |
-| DeathRecords 不断累加 | localStorage 可能超 5MB | Phase 3 加重启墓园(archive old records) |
-| 折磨/美德 passive modifiers 只覆盖 stress 增长 | Phase 3 怪癖/饰品需要更多 modifier 槽 | Phase 3 重构 modifier 系统 |
-| 致死抗性 67% 基础 + deathblowPenalty 累加 | 多次死亡之门后实际抗性可能 < 50% | Phase 3 加最小值保护 |
-| Mental Overlay 2.5s 自动消失 | 玩家可能漏掉关键信息 | Phase 3 加可关闭开关 + 文字可滚动 |
-| Phase 2 内容事件少(基本 0 个新增) | 玩家体验只有"压力增加 → 检定",缺少叙事张力 | Phase 2.5 加 ~10 个内容事件 |
-| `apply-stress` rule effect 缺失 | 现有事件无法直接施加 stress | Phase 2.5 加 rule effect 类型 |
-| mental-stress 链路无相关物品 | 玩家无法用绷带/圣水减压(只能回 HP) | Phase 2.5 加物品的 stress 效果 |
+| 风险 | 影响 | 建议 | 状态 |
+|------|------|------|------|
+| 庄园里 `HeroInstance` 仍带 `isDead / atDeathsDoor / stress` | 庄园英雄选择 UI 需隐藏死英雄 | Phase 3 加 hero 状态机 | 待 Phase 3 |
+| DeathRecords 不断累加 | localStorage 可能超 5MB | Phase 3 加重启墓园(archive old records) | 待 Phase 3 |
+| 折磨/美德 passive modifiers 只覆盖 stress 增长 | Phase 3 怪癖/饰品需要更多 modifier 槽 | Phase 3 重构 modifier 系统 | 待 Phase 3 |
+| 致死抗性 67% 基础 + deathblowPenalty 累加 | 多次死亡之门后实际抗性可能 < 50% | Phase 3 加最小值保护 | 待 Phase 3 |
+| Mental Overlay 2.5s 自动消失 | 玩家可能漏掉关键信息 | Phase 3 加可关闭开关 + 文字可滚动 | **✅ retro-fixed(per-kind config,hero-death 需手动关)** |
+| Phase 2 内容事件少(基本 0 个新增) | 玩家体验只有"压力增加 → 检定",缺少叙事张力 | Phase 2.5 加 ~10 个内容事件 | **✅ retro-fixed(11 个事件已注册)** |
+| `apply-stress` rule effect 缺失 | 现有事件无法直接施加 stress | Phase 2.5 加 rule effect 类型 | **✅ retro-fixed** |
+| mental-stress 链路无相关物品 | 玩家无法用绷带/圣水减压(只能回 HP) | Phase 2.5 加物品的 stress 效果 | 待 Phase 3(英雄死亡减压力等) |
 
 ## 8.3 后续优化项(非阻塞)
 
@@ -373,7 +373,77 @@ if (choice.tags.includes('retreat')) triggersToCheck.push('on-retreat-choice');
 - `triggerResolveCheck` 的 virtueChance 计算太粗(没考虑 afflict/virtue 互斥修饰)
 - 致死打击的 party pulse 反馈只 +2 stress,SPEC 没规定
 - 死亡记录没有"被读取"路径(report 没消费),Phase 3 墓园需要
-- `derivedEventDepth` 没在 dispatcher 重置,理论上 cross-tx 也会累加
+- `derivedEventDepth` 没在 dispatcher 重置,理论上 cross-tx 也会累加 → **✅ retro-fixed**
+
+---
+
+## 11. Phase 2.x retro-fix(2026-08-03)
+
+按 PHASE_2_REPORT.md §8.2 已知问题,本次提交修复 4 项:
+
+### 11.1 `apply-stress` rule effect 接入
+
+新增 RuleEffectKind `apply-stress`,让事件 outcome 可以直接施加压力(正/负值)。
+- 复用 `selectHeroes` 支持 `heroId` / `heroSelector`
+- 集成 mental pipeline:跨 100 触发意志检定,跨 200 触发心脏病
+- 折磨被动 +20% / 美德被动 -30% 继续生效
+- 集成测试 `tests/phase2-retro.test.ts:> apply-stress rule effect`
+
+### 11.2 11 个 Phase 2 内容事件注册
+
+按 SPEC §28.3 至少 11 个内容事件:
+
+| 类别 | 事件 | trigger | 效果预览 |
+|------|------|---------|----------|
+| 低火把 | `mental_low_torch_whispers` | torch-low | 听辨:可能 +8 stress 幻觉 |
+| | `mental_low_torch_candle` | torch-low | 蜡烛熄灭:消耗 5 火把 -3 stress / 黑暗 6-10 stress |
+| 队伍争执 | `party_dispute_blame` | manual | 调解 -3 / 升级 +5 |
+| | `party_dispute_route` | manual | 路线分歧压力 ±4 |
+| 美德激励 | `virtue_steadfast_inspire` | manual | 祈祷 -10/-8 stress |
+| | `virtue_valorous_shout` | manual | 鼓舞 -8/-5 stress |
+| 心脏病 | `heart_attack_stumble` | manual | 修女 +25/30 stress 触发心脏病 |
+| 死亡之门 | `deaths_door_emergency` | manual | 绷带救治 vs 观望 +5/+8 |
+| | `deaths_door_cover` | manual | 强盗掩护 +3/+8 stress |
+| 英雄死亡 | `hero_death_pickup` | manual | 拾取遗物 / 留下 |
+| | `hero_death_abandon` | manual | 带走 vs 掩埋 -3/+4-5 |
+
+事件注册在 `EVENT_REGISTRY`,Phase 3 接入时按 trigger 条件自动 fire。
+
+### 11.3 MentalOverlay per-kind timing
+
+旧:统一 2.5s 自动消失 → 玩家来不及读 heart-attack / hero-death。
+
+新:`OVERLAY_DURATION_MS` per-kind 配置:
+
+| overlay kind | 时长 |
+|--------------|------|
+| `resolve-check` | 1.8s |
+| `affliction-reveal` | 3.5s |
+| `virtue-reveal` | 3.5s |
+| `heart-attack` | 6.0s |
+| `deaths-door-entered` | 5.0s |
+| `deathblow` | 5.0s |
+| `hero-death` | **null (不自动消失,必须点击)** |
+| `party-pulse` | 2.5s |
+
+`hero-death` 必须手动关闭避免错过永久死亡信息。
+
+### 11.4 `derivedEventDepth` dispatcher 重置
+
+旧:跨事务累加,极端情况下持续 dispatch 会把状态推入 `game-error`。
+
+新:`dispatchGameCommand` 提交前 `ctx.state.derivedEventDepth = 0`,确保每事务从干净深度开始。
+
+### 11.5 新增测试
+
+`tests/phase2-retro.test.ts` - **13 个新测试**:
+- apply-stress rule effect:4 个(增加/减少/clamp/跨阈值)
+- 11 内容事件注册:3 个(完整注册 / torch-low trigger / manual trigger / outcome 引用 apply-stress)
+- derivedEventDepth 重置:2 个
+- 集成:1 个
+- 折磨/美德被动 modifier 整合:2 个
+
+**全测试结果:175/175 通过**(13 文件)
 
 ---
 

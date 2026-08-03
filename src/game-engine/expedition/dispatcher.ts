@@ -69,6 +69,8 @@ export function dispatchGameCommand(state: GameState, command: GameCommand): Gam
 
   const ctx = new ExpeditionContext(state);
   applyCommand(ctx, command);
+  // Phase 2 retro:提交后重置 derivedEventDepth,避免跨事务累加导致误入 game-error
+  ctx.state.derivedEventDepth = 0;
   ctx.commit();
 
   // 触发下一轮决策

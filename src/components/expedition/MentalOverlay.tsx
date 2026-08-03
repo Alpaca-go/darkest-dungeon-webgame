@@ -144,17 +144,30 @@ function renderOverlay(overlay: MentalOverlayType, state: GameState) {
   }
 }
 
+/** 自动消失时长(按 overlay kind,ms)。null = 不自动消失(必须手动点击) */
+const OVERLAY_DURATION_MS: Record<string, number | null> = {
+  'resolve-check': 1800,
+  'affliction-reveal': 3500,
+  'virtue-reveal': 3500,
+  'heart-attack': 6000,
+  'deaths-door-entered': 5000,
+  'deathblow': 5000,
+  'hero-death': null, // 必须手动关闭
+  'party-pulse': 2500,
+};
+
 export function MentalOverlayHost() {
   const state = useGameStore((s) => s.state);
   const dispatch = useGameStore((s) => s.dispatch);
   const overlay = state.activeOverlay;
 
-  // 自动消失(2.5s)除非是 death/heart-attack 等需要点掉
   useEffect(() => {
     if (!overlay) return;
+    const duration = OVERLAY_DURATION_MS[overlay.kind] ?? 2500;
+    if (duration == null) return; // 不自动消失(hero-death)
     const timeout = setTimeout(() => {
       dispatch({ type: 'DISMISS_OVERLAY', commandId: newCommandId('overlay') });
-    }, 2500);
+    }, duration);
     return () => clearTimeout(timeout);
   }, [overlay, dispatch]);
 

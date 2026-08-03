@@ -1213,8 +1213,570 @@ const TACTICAL_RETREAT: EventDef = {
 };
 
 // =====================================================================
-// 汇总
+// Phase 2 内容事件(SPEC §28.3)
+//
+// 11 个精神/死亡相关事件:
+//   - 2 low-torch mental events(torch-low trigger)
+//   - 2 party dispute events(manual trigger)
+//   - 2 virtue inspiration events(manual trigger)
+//   - 1 heart attack event(manual trigger)
+//   - 2 deaths-door scenarios(manual trigger)
+//   - 2 hero death follow-up(manual trigger)
+//
+// 触发说明:Phase 2.x 注册到 EVENT_REGISTRY 但不自动派发。
+// Phase 3 庄园周循环接入后,根据条件自动 fire;目前可由 DEBUG_FIRE_EVENT 触发。
 // =====================================================================
+
+/** 低火把 - 听见低语 */
+const MENTAL_LOW_TORCH_WHISPERS: EventDef = {
+  id: 'mental_low_torch_whispers',
+  trigger: 'torch-low',
+  title: '走廊里的低语',
+  description: '火光摇曳,墙缝里传出细碎的呢喃。',
+  sceneId: 'scene.ruins.mental.whispers',
+  conditions: [always],
+  weight: 8,
+  risk: 'medium',
+  choices: [
+    {
+      id: 'mental.whispers.investigate',
+      title: '仔细听辨',
+      description: '停下脚步,屏息倾听。',
+      riskPreview: [{ kind: 'trap', severity: 'medium', description: '可能被幻觉迷惑。' }],
+      costs: [{ kind: 'consume-time', amount: 1 }],
+      outcomeTable: [
+        {
+          weight: 5,
+          effects: [],
+          narrativeHint: '只是风穿过裂缝,松了口气。',
+        },
+        {
+          weight: 5,
+          effects: [{ kind: 'apply-stress', heroId: 'hero.vestal', amount: 8, narrativeHint: '低语幻觉' }],
+          narrativeHint: '低语变得清晰——是同伴的名字,声音充满了悔恨。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+    {
+      id: 'mental.whispers.ignore',
+      title: '继续前进',
+      description: '不回头,加快脚步。',
+      riskPreview: [],
+      costs: [],
+      outcomeTable: [
+        {
+          weight: 1,
+          effects: [],
+          narrativeHint: '你选择不去相信。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+  ],
+};
+
+/** 低火把 - 蜡烛摇曳 */
+const MENTAL_LOW_TORCH_CANDLE: EventDef = {
+  id: 'mental_low_torch_candle',
+  trigger: 'torch-low',
+  title: '蜡烛摇曳',
+  description: '手中的蜡烛突然自行熄灭,只剩烟气。',
+  sceneId: 'scene.ruins.mental.candle',
+  conditions: [always],
+  weight: 6,
+  risk: 'medium',
+  choices: [
+    {
+      id: 'mental.candle.relight',
+      title: '用火把重新点燃',
+      description: '消耗一点火把,让队伍镇定。',
+      riskPreview: [{ kind: 'consume', severity: 'low', description: '消耗 5 火把。' }],
+      costs: [{ kind: 'torch-delta', amount: -5, narrativeHint: '重新点燃蜡烛' }],
+      outcomeTable: [
+        {
+          weight: 7,
+          effects: [{ kind: 'apply-stress', heroId: 'hero.vestal', amount: -3, narrativeHint: '镇定队员' }],
+          narrativeHint: '光亮回来,队伍情绪稳定。',
+        },
+        {
+          weight: 3,
+          effects: [{ kind: 'apply-stress', heroId: 'hero.vestal', amount: 5, narrativeHint: '阴影注视' }],
+          narrativeHint: '光再次亮起时,似乎有什么东西在墙角缩回去。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+    {
+      id: 'mental.candle.darkness',
+      title: '在黑暗中前进',
+      description: '不再点火,凭记忆摸索。',
+      riskPreview: [{ kind: 'ambush', severity: 'high', description: '黑暗中容易被伏击。' }],
+      costs: [],
+      outcomeTable: [
+        {
+          weight: 4,
+          effects: [],
+          narrativeHint: '在黑暗中摸索,但安全走过。',
+        },
+        {
+          weight: 6,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.plague_doctor', amount: 10, narrativeHint: '黑暗恐惧' },
+            { kind: 'apply-stress', heroId: 'hero.vestal', amount: 6, narrativeHint: '黑暗恐惧' },
+          ],
+          narrativeHint: '黑暗压迫着所有人,瘟疫医生开始颤抖。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+  ],
+};
+
+/** 队伍争执 - 谁该负责 */
+const PARTY_DISPUTE_BLAME: EventDef = {
+  id: 'party_dispute_blame',
+  trigger: 'manual',
+  title: '互相指责',
+  description: '队伍在前一个房间险些陷入陷阱,十字军与强盗开始互相推诿。',
+  sceneId: 'scene.ruins.mental.dispute',
+  conditions: [always],
+  weight: 4,
+  risk: 'low',
+  choices: [
+    {
+      id: 'mental.dispute.mediate',
+      title: '修女出面调解',
+      description: '让修女以信念缓解对峙。',
+      riskPreview: [],
+      costs: [],
+      outcomeTable: [
+        {
+          weight: 6,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.crusader', amount: -3, narrativeHint: '修女调解' },
+            { kind: 'apply-stress', heroId: 'hero.highwayman', amount: -3, narrativeHint: '修女调解' },
+          ],
+          narrativeHint: '修女以柔和的言语让两人冷静。',
+        },
+        {
+          weight: 4,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.crusader', amount: 5, narrativeHint: '争执升级' },
+            { kind: 'apply-stress', heroId: 'hero.highwayman', amount: 5, narrativeHint: '争执升级' },
+          ],
+          narrativeHint: '修女的劝解反而激怒了双方。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+    {
+      id: 'mental.dispute.ignore',
+      title: '让他们自己消化',
+      description: '不介入,相信老兵会自己解决。',
+      riskPreview: [],
+      costs: [],
+      outcomeTable: [
+        {
+          weight: 7,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.crusader', amount: -2, narrativeHint: '自我消化' },
+            { kind: 'apply-stress', heroId: 'hero.highwayman', amount: -2, narrativeHint: '自我消化' },
+          ],
+          narrativeHint: '短暂的沉默后,两人相视一笑,回到各自岗位。',
+        },
+        {
+          weight: 3,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.vestal', amount: 4, narrativeHint: '目睹争执' },
+            { kind: 'apply-stress', heroId: 'hero.plague_doctor', amount: 4, narrativeHint: '目睹争执' },
+          ],
+          narrativeHint: '队友的冲突被其他人看在眼里,士气下降。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+  ],
+};
+
+/** 队伍争执 - 路线分歧 */
+const PARTY_DISPUTE_ROUTE: EventDef = {
+  id: 'party_dispute_route',
+  trigger: 'manual',
+  title: '路线分歧',
+  description: '前方分叉,十字军要走左边的窄道,强盗坚持走右边的通道。',
+  sceneId: 'scene.ruins.mental.route',
+  conditions: [always],
+  weight: 4,
+  risk: 'low',
+  choices: [
+    {
+      id: 'mental.route.crusader',
+      title: '跟十字军走窄道',
+      description: '信任前排战士的直觉。',
+      riskPreview: [],
+      costs: [],
+      outcomeTable: [
+        {
+          weight: 6,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.highwayman', amount: 4, narrativeHint: '路线被否决' },
+          ],
+          narrativeHint: '强盗嘟囔着,勉强跟上了十字军。',
+        },
+        {
+          weight: 4,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.crusader', amount: 2, narrativeHint: '路线成功' },
+            { kind: 'apply-stress', heroId: 'hero.highwayman', amount: -2, narrativeHint: '路线成功' },
+          ],
+          narrativeHint: '窄道通向一个隐藏房间,里面有补给。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+    {
+      id: 'mental.route.highwayman',
+      title: '听强盗的建议',
+      description: '强盗的判断往往更贴近实际。',
+      riskPreview: [],
+      costs: [],
+      outcomeTable: [
+        {
+          weight: 6,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.crusader', amount: 4, narrativeHint: '路线被否决' },
+          ],
+          narrativeHint: '十字军咬着牙接受了强盗的方案。',
+        },
+        {
+          weight: 4,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.crusader', amount: -2, narrativeHint: '路线成功' },
+            { kind: 'apply-stress', heroId: 'hero.highwayman', amount: 2, narrativeHint: '路线成功' },
+          ],
+          narrativeHint: '通道里安全通过,强盗吹起了口哨。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+  ],
+};
+
+/** 美德激励 - 坚定 */
+const VIRTUE_STEADFAST_INSPIRE: EventDef = {
+  id: 'virtue_steadfast_inspire',
+  trigger: 'manual',
+  title: '坚定的话语',
+  description: '修女在队伍中念诵经文,声音平静而有力。',
+  sceneId: 'scene.ruins.virtue.steadfast',
+  conditions: [always],
+  weight: 3,
+  risk: 'low',
+  choices: [
+    {
+      id: 'virtue.steadfast.join',
+      title: '一起祈祷',
+      description: '所有人加入,稳定团队。',
+      riskPreview: [],
+      costs: [{ kind: 'consume-time', amount: 1 }],
+      outcomeTable: [
+        {
+          weight: 8,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.crusader', amount: -10, narrativeHint: '坚定祈祷' },
+            { kind: 'apply-stress', heroId: 'hero.highwayman', amount: -10, narrativeHint: '坚定祈祷' },
+            { kind: 'apply-stress', heroId: 'hero.vestal', amount: -8, narrativeHint: '坚定祈祷' },
+            { kind: 'apply-stress', heroId: 'hero.plague_doctor', amount: -10, narrativeHint: '坚定祈祷' },
+          ],
+          narrativeHint: '每个人的心里都安定了些。',
+        },
+        {
+          weight: 2,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.vestal', amount: 3, narrativeHint: '反思信仰' },
+          ],
+          narrativeHint: '修女在经文中反思自己,一时更加沉重。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+  ],
+};
+
+/** 美德激励 - 勇猛 */
+const VIRTUE_VALOROUS_SHOUT: EventDef = {
+  id: 'virtue_valorous_shout',
+  trigger: 'manual',
+  title: '勇猛的呼喊',
+  description: '强盗在战斗间歇高举拳头,激励队友。',
+  sceneId: 'scene.ruins.virtue.valorous',
+  conditions: [always],
+  weight: 3,
+  risk: 'low',
+  choices: [
+    {
+      id: 'virtue.valorous.respond',
+      title: '响应号召',
+      description: '所有人为之一振。',
+      riskPreview: [],
+      costs: [],
+      outcomeTable: [
+        {
+          weight: 9,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.crusader', amount: -8, narrativeHint: '勇猛激励' },
+            { kind: 'apply-stress', heroId: 'hero.highwayman', amount: -5, narrativeHint: '勇猛激励' },
+            { kind: 'apply-stress', heroId: 'hero.vestal', amount: -8, narrativeHint: '勇猛激励' },
+            { kind: 'apply-stress', heroId: 'hero.plague_doctor', amount: -8, narrativeHint: '勇猛激励' },
+          ],
+          narrativeHint: '团队士气高涨,准备迎接下一次挑战。',
+        },
+        {
+          weight: 1,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.highwayman', amount: 4, narrativeHint: '空洞' },
+          ],
+          narrativeHint: '强盗的呼喊在回声中显得空洞,反而让人压抑。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+  ],
+};
+
+/** 心脏病 - 英雄踉跄 */
+const HEART_ATTACK_STUMBLE: EventDef = {
+  id: 'heart_attack_stumble',
+  trigger: 'manual',
+  title: '英雄突然倒下',
+  description: '修女捂住胸口,突然倒在地上。',
+  sceneId: 'scene.ruins.mental.heart_attack',
+  conditions: [always],
+  weight: 2,
+  risk: 'high',
+  choices: [
+    {
+      id: 'heart.stumble.stabilize',
+      title: '队友立刻围上',
+      description: '让瘟疫医生紧急处理,十字军警戒。',
+      riskPreview: [],
+      costs: [],
+      outcomeTable: [
+        {
+          weight: 5,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.vestal', amount: 25, narrativeHint: '心脏病触发' },
+          ],
+          narrativeHint: '修女的心脏剧烈跳动——她已经很久没承受过这种压力。',
+        },
+        {
+          weight: 5,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.vestal', amount: 30, narrativeHint: '心脏病+1' },
+          ],
+          narrativeHint: '修女当场心脏病发作,跪倒在地,只能勉强呼吸。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+  ],
+};
+
+/** 死亡之门 - 紧急救治 */
+const DEATHS_DOOR_EMERGENCY: EventDef = {
+  id: 'deaths_door_emergency',
+  trigger: 'manual',
+  title: '紧急救治',
+  description: '十字军倒下了——他还有呼吸,但很微弱。任何治疗都可能救他一命。',
+  sceneId: 'scene.ruins.deaths_door.emergency',
+  conditions: [always],
+  weight: 1,
+  risk: 'extreme',
+  choices: [
+    {
+      id: 'deaths_door.emergency.heal',
+      title: '立刻使用绷带',
+      description: '消耗 1 绷带,把他从死亡之门拉回来。',
+      riskPreview: [{ kind: 'consume', severity: 'low', description: '消耗 1 绷带。' }],
+      conditions: [condHas('bandage')],
+      costs: [{ kind: 'take-item', itemId: 'bandage', count: 1 }],
+      outcomeTable: [
+        {
+          weight: 1,
+          effects: [],
+          narrativeHint: '绷带覆盖了伤口,十字军恢复了一些血量。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+    {
+      id: 'deaths_door.emergency.watch',
+      title: '观望等待',
+      description: '不立刻治疗,看他是否能自己撑过来。',
+      riskPreview: [{ kind: 'injury', severity: 'extreme', description: '可能再次受击致死。' }],
+      costs: [],
+      outcomeTable: [
+        {
+          weight: 3,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.vestal', amount: 5, narrativeHint: '观望焦虑' },
+            { kind: 'apply-stress', heroId: 'hero.plague_doctor', amount: 5, narrativeHint: '观望焦虑' },
+          ],
+          narrativeHint: '十字军仍然在呼吸,所有人都捏了一把汗。',
+        },
+        {
+          weight: 7,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.vestal', amount: 8, narrativeHint: '十字军濒死' },
+            { kind: 'apply-stress', heroId: 'hero.plague_doctor', amount: 8, narrativeHint: '十字军濒死' },
+          ],
+          narrativeHint: '十字军的呼吸越来越弱,死亡随时降临。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+  ],
+};
+
+/** 死亡之门 - 掩护 */
+const DEATHS_DOOR_COVER: EventDef = {
+  id: 'deaths_door_cover',
+  trigger: 'manual',
+  title: '掩护伤员',
+  description: '十字军倒下了,强盗挡在他前面。',
+  sceneId: 'scene.ruins.deaths_door.cover',
+  conditions: [always],
+  weight: 1,
+  risk: 'high',
+  choices: [
+    {
+      id: 'deaths_door.cover.stand',
+      title: '强盗坚守',
+      description: '让强盗吸引火力。',
+      riskPreview: [{ kind: 'injury', severity: 'high', description: '强盗可能受伤。' }],
+      costs: [],
+      outcomeTable: [
+        {
+          weight: 6,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.highwayman', amount: 3, narrativeHint: '掩护压力' },
+          ],
+          narrativeHint: '强盗成功吸引了敌人的注意力,十字军暂时安全。',
+        },
+        {
+          weight: 4,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.highwayman', amount: 8, narrativeHint: '掩护受击' },
+            { kind: 'apply-stress', heroId: 'hero.crusader', amount: 3, narrativeHint: '连累十字军' },
+          ],
+          narrativeHint: '强盗挡住了大部分攻击,但自己也中了一刀。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+  ],
+};
+
+/** 英雄死亡后续 - 拾取遗物 */
+const HERO_DEATH_PICKUP: EventDef = {
+  id: 'hero_death_pickup',
+  trigger: 'manual',
+  title: '拾取遗物',
+  description: '十字军倒下的地方散落着他的武器和圣徽。',
+  sceneId: 'scene.ruins.death.pickup',
+  conditions: [always],
+  weight: 1,
+  risk: 'low',
+  choices: [
+    {
+      id: 'death.pickup.take',
+      title: '拾取并带走',
+      description: '把十字军的遗物收进背包,带走他的记忆。',
+      riskPreview: [],
+      costs: [],
+      outcomeTable: [
+        {
+          weight: 1,
+          effects: [
+            { kind: 'give-item', itemId: 'gold', count: 2, narrativeHint: '十字军遗物' },
+          ],
+          narrativeHint: '你收下了他的徽章——它将在下次冒险中带来好运。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+    {
+      id: 'death.pickup.leave',
+      title: '不带任何东西',
+      description: '让十字军安息。',
+      riskPreview: [],
+      costs: [],
+      outcomeTable: [
+        {
+          weight: 1,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.vestal', amount: 4, narrativeHint: '留物之痛' },
+          ],
+          narrativeHint: '修女低头祈祷,所有人默默注视十字军。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+  ],
+};
+
+/** 英雄死亡后续 - 放弃遗体 */
+const HERO_DEATH_ABANDON: EventDef = {
+  id: 'hero_death_abandon',
+  trigger: 'manual',
+  title: '放弃遗体',
+  description: '十字军的遗体沉重,带走会拖慢队伍。',
+  sceneId: 'scene.ruins.death.abandon',
+  conditions: [always],
+  weight: 1,
+  risk: 'medium',
+  choices: [
+    {
+      id: 'death.abandon.carry',
+      title: '坚持带走',
+      description: '即使再慢,也要带他回家。',
+      riskPreview: [{ kind: 'lost-time', severity: 'medium', description: '更多时间消耗。' }],
+      costs: [{ kind: 'consume-time', amount: 2 }],
+      outcomeTable: [
+        {
+          weight: 1,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.vestal', amount: -3, narrativeHint: '陪伴慰藉' },
+            { kind: 'apply-stress', heroId: 'hero.plague_doctor', amount: -3, narrativeHint: '陪伴慰藉' },
+          ],
+          narrativeHint: '所有人为十字军送行,心中多了一份慰藉。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+    {
+      id: 'death.abandon.leave',
+      title: '就地掩埋',
+      description: '完成一个简单的仪式后,继续前进。',
+      riskPreview: [],
+      costs: [],
+      outcomeTable: [
+        {
+          weight: 1,
+          effects: [
+            { kind: 'apply-stress', heroId: 'hero.crusader', amount: 4, narrativeHint: '老兵哀伤' },
+            { kind: 'apply-stress', heroId: 'hero.vestal', amount: 5, narrativeHint: '修道哀伤' },
+          ],
+          narrativeHint: '十字架被插在坟墓上,每个人都低下头。',
+        },
+      ],
+      terminatesEvent: true,
+    },
+  ],
+};
+
+
 
 export const EVENT_REGISTRY: Record<string, EventDef> = {
   // 陷阱
@@ -1249,6 +1811,18 @@ export const EVENT_REGISTRY: Record<string, EventDef> = {
   tactical_reform: TACTICAL_REFORM,
   tactical_use_item: TACTICAL_USE_ITEM,
   tactical_retreat: TACTICAL_RETREAT,
+  // Phase 2 内容事件
+  mental_low_torch_whispers: MENTAL_LOW_TORCH_WHISPERS,
+  mental_low_torch_candle: MENTAL_LOW_TORCH_CANDLE,
+  party_dispute_blame: PARTY_DISPUTE_BLAME,
+  party_dispute_route: PARTY_DISPUTE_ROUTE,
+  virtue_steadfast_inspire: VIRTUE_STEADFAST_INSPIRE,
+  virtue_valorous_shout: VIRTUE_VALOROUS_SHOUT,
+  heart_attack_stumble: HEART_ATTACK_STUMBLE,
+  deaths_door_emergency: DEATHS_DOOR_EMERGENCY,
+  deaths_door_cover: DEATHS_DOOR_COVER,
+  hero_death_pickup: HERO_DEATH_PICKUP,
+  hero_death_abandon: HERO_DEATH_ABANDON,
 };
 
 export function getEventDef(id: string): EventDef | undefined {

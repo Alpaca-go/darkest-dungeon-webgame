@@ -13,6 +13,7 @@ import { ExpeditionContext } from './context.js';
 import type { RuleCondition, RuleEffect, WeightedOutcome, RuleEffectKind } from './types.js';
 import type { ItemId } from './types.js';
 import { countItem, setItemCount } from './context.js';
+import { applyStress } from '../mental/index.js';
 
 export function evalCondition(ctx: ExpeditionContext, cond: RuleCondition): boolean {
   switch (cond.kind) {
@@ -311,6 +312,21 @@ export function applyEffect(ctx: ExpeditionContext, effect: RuleEffect): void {
         reason: effect.narrativeHint ?? 'rule',
       });
       return;
+    case 'apply-stress': {
+      // Phase 2:事件直接施加压力
+      // amount 解释:正=加压力,负=减压力
+      const targets = selectHeroes(ctx, effect.heroId, effect.heroSelector);
+      const stressAmount = effect.amount ?? 0;
+      for (const id of targets) {
+        applyStress(ctx, {
+          type: 'apply-stress',
+          heroId: id,
+          amount: stressAmount,
+          source: effect.narrativeHint ?? 'rule',
+        });
+      }
+      return;
+    }
   }
 }
 
