@@ -293,7 +293,7 @@ describe('Phase 3 dispatcher: UPGRADE', () => {
 
   it('UPGRADE_HERO_WEAPON 已满级 → 抛错', () => {
     const s = freshGame('d-upg-max-1');
-    s.party['h.crusader']!.weaponLevel = 2;
+    s.party['h.crusader']!.weaponLevel = 4;
     expect(() => dispatchGameCommand(s, {
       type: 'UPGRADE_HERO_WEAPON', heroId: 'h.crusader', commandId: newCommandId('u'),
     })).toThrow();

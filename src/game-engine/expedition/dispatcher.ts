@@ -83,6 +83,10 @@ import {
   processDeathRecovery,
   buildTrinketDefCache,
 } from '../trinkets/index.js';
+import {
+  addXp,
+  upgradeHeroSlot,
+} from '../progression/index.js';
 
 export class CommandError extends Error {
   constructor(message: string) {
@@ -252,6 +256,8 @@ function applyCommand(ctx: ExpeditionContext, command: GameCommand): void {
       return cmdUnequipTrinket(ctx, command.heroId, command.slotIndex, command.commandId);
     case 'PROCESS_DEATH_RECOVERY':
       return cmdProcessDeathRecovery(ctx, command.heroId, command.choice, command.commandId);
+    case 'GRANT_XP':
+      return cmdGrantXp(ctx, command.heroId, command.amount, command.commandId);
   }
 }
 
@@ -1035,17 +1041,14 @@ function cmdUpgradeHeroSkill(
   if (!ctx.state.campaign.facilityStates['guild']) {
     throw new CommandError('guild not available');
   }
-  if (hero.skillLevels?.[skillId] !== undefined && hero.skillLevels[skillId]! >= 2) {
-    throw new CommandError('skill already maxed');
+  const guildLevel = ctx.state.campaign.facilityStates['guild']?.level ?? 1;
+  const r = upgradeHeroSlot(hero, 'skill', skillId, 800, guildLevel);
+  if (!r.ok) throw new CommandError(`skill upgrade failed: ${r.reason}`);
+  if (ctx.state.campaign.gold < r.costGold) {
+    throw new CommandError(`gold insufficient (need ${r.costGold})`);
   }
-  const cost = 800;
-  if (ctx.state.campaign.gold < cost) {
-    throw new CommandError(`gold insufficient (need ${cost})`);
-  }
-  ctx.state.campaign.gold -= cost;
-  if (!hero.skillLevels) hero.skillLevels = {};
-  hero.skillLevels[skillId] = Math.min(2, (hero.skillLevels[skillId] ?? 0) + 1);
-  ctx.emit('HERO_SKILL_UPGRADED', { heroId, skillId, newLevel: hero.skillLevels[skillId] });
+  ctx.state.campaign.gold -= r.costGold;
+  ctx.emit('HERO_SKILL_UPGRADED', { heroId, skillId, newLevel: r.newLevel });
 }
 
 /** 升级英雄武器 */
@@ -1054,16 +1057,14 @@ function cmdUpgradeHeroWeapon(ctx: ExpeditionContext, heroId: string, _commandId
   if (!ctx.state.campaign) throw new CommandError('no campaign state');
   const hero = ctx.state.party[heroId];
   if (!hero) throw new CommandError(`hero not found: ${heroId}`);
-  if ((hero.weaponLevel ?? 0) >= 2) {
-    throw new CommandError('weapon already maxed');
+  const blacksmithLevel = ctx.state.campaign.facilityStates['blacksmith']?.level ?? 1;
+  const r = upgradeHeroSlot(hero, 'weapon', null, 750, blacksmithLevel);
+  if (!r.ok) throw new CommandError(`weapon upgrade failed: ${r.reason}`);
+  if (ctx.state.campaign.gold < r.costGold) {
+    throw new CommandError(`gold insufficient (need ${r.costGold})`);
   }
-  const cost = 750;
-  if (ctx.state.campaign.gold < cost) {
-    throw new CommandError(`gold insufficient (need ${cost})`);
-  }
-  ctx.state.campaign.gold -= cost;
-  hero.weaponLevel = Math.min(2, (hero.weaponLevel ?? 0) + 1);
-  ctx.emit('HERO_WEAPON_UPGRADED', { heroId, newLevel: hero.weaponLevel });
+  ctx.state.campaign.gold -= r.costGold;
+  ctx.emit('HERO_WEAPON_UPGRADED', { heroId, newLevel: r.newLevel });
 }
 
 /** 升级英雄护甲 */
@@ -1072,16 +1073,14 @@ function cmdUpgradeHeroArmor(ctx: ExpeditionContext, heroId: string, _commandId:
   if (!ctx.state.campaign) throw new CommandError('no campaign state');
   const hero = ctx.state.party[heroId];
   if (!hero) throw new CommandError(`hero not found: ${heroId}`);
-  if ((hero.armorLevel ?? 0) >= 2) {
-    throw new CommandError('armor already maxed');
+  const blacksmithLevel = ctx.state.campaign.facilityStates['blacksmith']?.level ?? 1;
+  const r = upgradeHeroSlot(hero, 'armor', null, 750, blacksmithLevel);
+  if (!r.ok) throw new CommandError(`armor upgrade failed: ${r.reason}`);
+  if (ctx.state.campaign.gold < r.costGold) {
+    throw new CommandError(`gold insufficient (need ${r.costGold})`);
   }
-  const cost = 750;
-  if (ctx.state.campaign.gold < cost) {
-    throw new CommandError(`gold insufficient (need ${cost})`);
-  }
-  ctx.state.campaign.gold -= cost;
-  hero.armorLevel = Math.min(2, (hero.armorLevel ?? 0) + 1);
-  ctx.emit('HERO_ARMOR_UPGRADED', { heroId, newLevel: hero.armorLevel });
+  ctx.state.campaign.gold -= r.costGold;
+  ctx.emit('HERO_ARMOR_UPGRADED', { heroId, newLevel: r.newLevel });
 }
 
 /** 选本周任务 */
@@ -1337,5 +1336,20 @@ function cmdProcessDeathRecovery(ctx: ExpeditionContext, heroId: string, choice:
   }
   for (const recovered of result.recovered) {
     ctx.emit('TRINKET_RECOVERED', { heroId, trinketInstanceId: recovered });
+  }
+}
+
+// =============== Phase 4 成长深化 ===============
+
+/** 授予 XP(远征结算/任务完成) */
+function cmdGrantXp(ctx: ExpeditionContext, heroId: string, amount: number, _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero) throw new CommandError(`hero not found: ${heroId}`);
+  if (hero.isDead) throw new CommandError('dead hero cannot gain xp');
+  if (amount <= 0) return;
+  const r = addXp(hero, amount);
+  if (r.levelsGained > 0) {
+    ctx.emit('HERO_RESOLVE_LEVEL_INCREASED', { heroId, newLevel: r.newLevel });
   }
 }
