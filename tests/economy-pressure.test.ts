@@ -86,7 +86,7 @@ beforeEach(() => clearProcessedCommands());
 
 describe('Phase 3 经济压力: 资源约束', () => {
   it('金币不能成为负数', () => {
-    let s = freshGame('econ-no-neg-1', 100);
+    const s = freshGame('econ-no-neg-1', 100);
     // 尝试花超过余额的 → 应抛错
     expect(() => dispatchGameCommand(s, {
       type: 'ASSIGN_HERO_TO_FACILITY',
@@ -98,7 +98,7 @@ describe('Phase 3 经济压力: 资源约束', () => {
   });
 
   it('升级武器金币不足 → 抛错', () => {
-    let s = freshGame('econ-up-no', 100);
+    const s = freshGame('econ-up-no', 100);
     expect(() => dispatchGameCommand(s, {
       type: 'UPGRADE_HERO_WEAPON', heroId: 'h.crusader', commandId: newCommandId('u'),
     })).toThrow();
