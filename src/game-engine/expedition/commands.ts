@@ -76,6 +76,12 @@ export type GameCommand =
   | { type: 'PROCESS_DEATH_RECOVERY'; heroId: string; choice: 'recover-one' | 'abandon-all' | 'emergency-retreat'; commandId: string }
   // Phase 4 成长深化
   | { type: 'GRANT_XP'; heroId: string; amount: number; commandId: string }
+  // Phase 4 P4.4 露营系统(SPEC §10/§11/§12/§13/§14)
+  | { type: 'START_CAMP'; commandId: string }
+  | { type: 'CHOOSE_CAMP_FOOD'; choiceId: import('../camps/types.js').CampFoodChoiceId; commandId: string }
+  | { type: 'CHOOSE_CAMP_ACTIVITY'; activityId: string; targetHeroId?: string; commandId: string }
+  | { type: 'FINISH_CAMP'; commandId: string }
+  | { type: 'RESOLVE_NIGHT_AMBUSH'; commandId: string }
   // Phase 2:精神系统命令(由规则引擎自动派发,UI 不直接调用)
   | { type: 'APPLY_STRESS'; heroId: string; amount: number; source: string; commandId: string }
   | { type: 'RESOLVE_CHECK'; heroId: string; commandId: string }
@@ -103,7 +109,12 @@ export type GameCommand =
   | { type: 'DEBUG_FORCE_HEART_ATTACK'; heroId: string; commandId: string }
   | { type: 'DEBUG_FORCE_DEATHBLOW_SUCCESS'; heroId: string; commandId: string }
   | { type: 'DEBUG_FORCE_DEATHBLOW_FAIL'; heroId: string; commandId: string }
-  | { type: 'DEBUG_REVIVE_HERO'; heroId: string; commandId: string };
+  | { type: 'DEBUG_REVIVE_HERO'; heroId: string; commandId: string }
+  // Phase 4 P4.4 露营调试
+  | { type: 'DEBUG_FORCE_CAMP'; nodeId?: string; commandId: string }
+  | { type: 'DEBUG_SET_CAMP_POINTS'; value: number; commandId: string }
+  | { type: 'DEBUG_FORCE_NIGHT_AMBUSH'; prevent: boolean; commandId: string }
+  | { type: 'DEBUG_ADD_EXPEDITION_BUFF'; tag: string; magnitude: number; remainingNodes: number; commandId: string };
 
 export type CommandType = GameCommand['type'];
 

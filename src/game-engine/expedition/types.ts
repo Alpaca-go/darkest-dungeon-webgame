@@ -701,6 +701,13 @@ export interface ExpeditionState {
   /** 任务是否失败(不可恢复) */
   failed: boolean;
   failReason?: string;
+  // ========== Phase 4 P4.4 露营系统(SPEC §10/§11/§12) ==========
+  /** 当前露营状态(null = 未在露营) */
+  campState?: import('../camps/types.js').CampState | null;
+  /** 远征期间的持续 Buff(露营/奇物/事件) */
+  expeditionBuffs?: import('../camps/types.js').ExpeditionBuff[];
+  /** 本远征是否已露营过 */
+  campUsed?: boolean;
 }
 
 // =====================================================================

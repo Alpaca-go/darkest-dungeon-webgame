@@ -258,6 +258,24 @@ function applyCommand(ctx: ExpeditionContext, command: GameCommand): void {
       return cmdProcessDeathRecovery(ctx, command.heroId, command.choice, command.commandId);
     case 'GRANT_XP':
       return cmdGrantXp(ctx, command.heroId, command.amount, command.commandId);
+    case 'START_CAMP':
+      return cmdStartCamp(ctx, command.commandId);
+    case 'CHOOSE_CAMP_FOOD':
+      return cmdChooseCampFood(ctx, command.choiceId, command.commandId);
+    case 'CHOOSE_CAMP_ACTIVITY':
+      return cmdChooseCampActivity(ctx, command.activityId, command.targetHeroId, command.commandId);
+    case 'FINISH_CAMP':
+      return cmdFinishCamp(ctx, command.commandId);
+    case 'RESOLVE_NIGHT_AMBUSH':
+      return cmdResolveNightAmbush(ctx, command.commandId);
+    case 'DEBUG_FORCE_CAMP':
+      return cmdDebugForceCamp(ctx, command.nodeId, command.commandId);
+    case 'DEBUG_SET_CAMP_POINTS':
+      return cmdDebugSetCampPoints(ctx, command.value, command.commandId);
+    case 'DEBUG_FORCE_NIGHT_AMBUSH':
+      return cmdDebugForceNightAmbush(ctx, command.prevent, command.commandId);
+    case 'DEBUG_ADD_EXPEDITION_BUFF':
+      return cmdDebugAddExpeditionBuff(ctx, command.tag, command.magnitude, command.remainingNodes, command.commandId);
   }
 }
 
@@ -1352,4 +1370,241 @@ function cmdGrantXp(ctx: ExpeditionContext, heroId: string, amount: number, _com
   if (r.levelsGained > 0) {
     ctx.emit('HERO_RESOLVE_LEVEL_INCREASED', { heroId, newLevel: r.newLevel });
   }
+}
+
+// =============== Phase 4 P4.4 露营命令 ===============
+
+import {
+  startCamp as campStart,
+  selectFood as campSelectFood,
+  selectActivity as campSelectActivity,
+  finishCamp as campFinish,
+  checkNightAmbush,
+  applyNightAmbushResult,
+  isCampCompleted,
+  activeBuffs,
+  DEFAULT_CAMP_CONFIG,
+} from '../camps/manager.js';
+import type {
+  CampFoodChoiceId,
+  ExpeditionBuff,
+  NightAmbushOutcome,
+  NightAmbushResult,
+} from '../camps/types.js';
+
+/** 夜袭 outcome → 效果数值 */
+function makeNightAmbushEffects(outcome: NightAmbushOutcome): NightAmbushResult['effects'] {
+  switch (outcome) {
+    case 'stressed':
+      return { stressDelta: 20 };
+    case 'torch-lost':
+      return { torchLost: 25 };
+    case 'food-lost':
+      return { foodLost: 3 };
+    case 'formation-broken':
+      return { stressDelta: 5 };
+    case 'diseased':
+      return { diseaseId: 'd_blight' }; // SPEC §4A 默认:腐症
+    case 'partial-buff-lost':
+      return { buffsLost: [] }; // 简化:不掉具体 buff
+    case 'ambush-encounter':
+      return { stressDelta: 10, torchLost: 10 };
+    case 'safe':
+    default:
+      return {};
+  }
+}
+
+function nightAmbushNarrative(outcome: NightAmbushOutcome, guarded: boolean): string {
+  if (guarded) return '守夜成功,夜袭未发生';
+  switch (outcome) {
+    case 'safe': return '一夜平安';
+    case 'stressed': return '黑暗中传来奇怪的声音,队伍压力上升';
+    case 'torch-lost': return '篝火被风吹灭,火把下降';
+    case 'food-lost': return '营地被偷,食物损失';
+    case 'formation-broken': return '夜袭警报后阵型混乱';
+    case 'diseased': return '一名英雄在夜袭中感染疾病';
+    case 'partial-buff-lost': return '夜袭扰乱了 Buff 持续';
+    case 'ambush-encounter': return '夜袭升级为伏击遭遇';
+  }
+}
+
+function cmdStartCamp(ctx: ExpeditionContext, _commandId: string): void {
+  void _commandId;
+  const exp = ctx.state.expedition;
+  const result = campStart(exp, ctx.state.party, DEFAULT_CAMP_CONFIG, exp.depth);
+  if (!result.ok) throw new CommandError(`start camp failed: ${result.reason}`);
+  exp.campState = result.campState;
+  exp.campUsed = false; // finishCamp 才设 true
+  ctx.emit('CAMP_STARTED', {
+    nodeId: exp.currentNodeId,
+    totalPoints: result.campState.totalPoints,
+  });
+}
+
+function cmdChooseCampFood(ctx: ExpeditionContext, choiceId: CampFoodChoiceId, _commandId: string): void {
+  void _commandId;
+  const exp = ctx.state.expedition;
+  if (!exp.campState) throw new CommandError('no camp state');
+  const result = campSelectFood(exp, ctx.state.party, ctx.state.inventory, choiceId);
+  if (!result.ok) throw new CommandError(`choose food failed: ${result.reason}`);
+  ctx.emit('CAMP_FOOD_CONSUMED', {
+    foodSpent: result.foodConsumed,
+    choice: choiceId,
+  });
+  if (result.healFlat > 0) {
+    ctx.emit('CAMP_HEALING_APPLIED', { heroId: 'all', amount: result.healFlat });
+  }
+  if (result.stressDelta !== 0) {
+    ctx.emit('CAMP_STRESS_REDUCED', { heroId: 'all', amount: result.stressDelta });
+  }
+}
+
+function cmdChooseCampActivity(
+  ctx: ExpeditionContext,
+  activityId: string,
+  targetHeroId: string | undefined,
+  _commandId: string,
+): void {
+  void _commandId;
+  const exp = ctx.state.expedition;
+  if (!exp.campState) throw new CommandError('no camp state');
+  const result = campSelectActivity(exp, ctx.state.party, ctx.state.inventory, activityId, targetHeroId ?? null);
+  if (!result.ok) throw new CommandError(`choose activity failed: ${result.reason}`);
+  ctx.emit('CAMP_ACTIVITY_SELECTED', {
+    activityId,
+    targetHeroId,
+    costPoints: result.pointsSpent,
+  });
+  ctx.emit('CAMP_POINTS_SPENT', {
+    remainingPoints: result.remainingPoints,
+  });
+  if (result.buffApplied) {
+    ctx.emit('CAMP_BUFF_APPLIED', { buffId: `camp-buff-${activityId}`, sourceId: activityId });
+  }
+}
+
+function cmdFinishCamp(ctx: ExpeditionContext, _commandId: string): void {
+  void _commandId;
+  const exp = ctx.state.expedition;
+  if (!exp.campState) throw new CommandError('no camp state');
+  if (isCampCompleted(exp.campState)) {
+    throw new CommandError('camp already completed');
+  }
+  // 标记 campState 进入 night-resolution
+  exp.campState.campStatus = 'night-resolution';
+  const result = campFinish(exp);
+  if (!result.ok) throw new CommandError(`finish camp failed: ${result.reason}`);
+  const totalBuffs = activeBuffs(exp).length;
+  ctx.emit('CAMP_COMPLETED', {
+    totalBuffsApplied: totalBuffs,
+    totalStressReduced: 0,
+    totalHealing: 0,
+  });
+}
+
+function cmdResolveNightAmbush(ctx: ExpeditionContext, _commandId: string): void {
+  void _commandId;
+  const exp = ctx.state.expedition;
+  if (!exp.campState) throw new CommandError('no camp state');
+  if (exp.campState.nightAmbushResult) {
+    throw new CommandError('night ambush already resolved');
+  }
+  if (exp.campState.campStatus !== 'completed' && exp.campState.campStatus !== 'night-resolution') {
+    throw new CommandError(`camp status ${exp.campState.campStatus} cannot resolve ambush`);
+  }
+  const hasScoutBuff = activeBuffs(exp).some((b) => b.tag === 'scout-bonus');
+  const check = checkNightAmbush({
+    rngState: ctx.state.rng,
+    baseChance: DEFAULT_CAMP_CONFIG.baseAmbushChance,
+    guardEstablished: exp.campState.guardEstablished,
+    torchValue: exp.torch,
+    hasScoutBuff,
+    regionDanger: 0, // Phase 5 区域填
+  });
+  // 持久化新 rng
+  ctx.state.rng = check.newRngState;
+  ctx.emit('NIGHT_AMBUSH_CHECK_STARTED', { roll: 0, prevented: check.guarded });
+  const eff = makeNightAmbushEffects(check.outcome);
+  const result: NightAmbushResult = {
+    outcome: check.outcome,
+    effects: eff,
+    narrative: nightAmbushNarrative(check.outcome, check.guarded),
+    guarded: check.guarded,
+  };
+  applyNightAmbushResult(exp, ctx.state.party, ctx.state.inventory, result);
+  if (check.guarded) {
+    ctx.emit('NIGHT_AMBUSH_PREVENTED', { reason: 'guard established' });
+  } else if (check.triggered) {
+    ctx.emit('NIGHT_AMBUSH_TRIGGERED', { outcome: mapOutcome(check.outcome) });
+  }
+}
+
+function mapOutcome(o: NightAmbushOutcome): 'stress' | 'torch' | 'food' | 'formation' | 'disease' | 'ambush' {
+  if (o === 'torch-lost') return 'torch';
+  if (o === 'food-lost') return 'food';
+  if (o === 'formation-broken') return 'formation';
+  if (o === 'diseased') return 'disease';
+  if (o === 'ambush-encounter') return 'ambush';
+  return 'stress';
+}
+
+// =============== Phase 4 P4.4 露营调试 ===============
+
+function cmdDebugForceCamp(ctx: ExpeditionContext, nodeId: string | undefined, _commandId: string): void {
+  void _commandId;
+  const exp = ctx.state.expedition;
+  if (nodeId) exp.currentNodeId = nodeId;
+  // 重置 campUsed 以便可以开启
+  exp.campUsed = false;
+  exp.campState = null;
+  const result = campStart(exp, ctx.state.party, DEFAULT_CAMP_CONFIG, exp.depth);
+  if (!result.ok) throw new CommandError(`force camp failed: ${result.reason}`);
+  exp.campState = result.campState;
+  ctx.emit('CAMP_STARTED', {
+    nodeId: exp.currentNodeId,
+    totalPoints: result.campState.totalPoints,
+  });
+}
+
+function cmdDebugSetCampPoints(ctx: ExpeditionContext, value: number, _commandId: string): void {
+  void _commandId;
+  const exp = ctx.state.expedition;
+  if (!exp.campState) throw new CommandError('no camp state');
+  if (value < 0) throw new CommandError('camp points must be >= 0');
+  exp.campState.remainingPoints = value;
+  if (value > exp.campState.totalPoints) exp.campState.totalPoints = value;
+}
+
+function cmdDebugForceNightAmbush(ctx: ExpeditionContext, prevent: boolean, _commandId: string): void {
+  void _commandId;
+  const exp = ctx.state.expedition;
+  if (!exp.campState) throw new CommandError('no camp state');
+  if (prevent) {
+    exp.campState.guardEstablished = true;
+  } else {
+    exp.campState.guardEstablished = false;
+  }
+}
+
+function cmdDebugAddExpeditionBuff(
+  ctx: ExpeditionContext,
+  tag: string,
+  magnitude: number,
+  remainingNodes: number,
+  _commandId: string,
+): void {
+  void _commandId;
+  const exp = ctx.state.expedition;
+  const buff: ExpeditionBuff = {
+    id: `debug-buff-${tag}-${Date.now()}`,
+    sourceId: 'debug',
+    sourceLabel: `Debug ${tag}`,
+    tag: tag as ExpeditionBuff['tag'],
+    remainingNodes,
+    magnitude,
+  };
+  if (!exp.expeditionBuffs) exp.expeditionBuffs = [];
+  exp.expeditionBuffs.push(buff);
+  ctx.emit('CAMP_BUFF_APPLIED', { buffId: buff.id, sourceId: 'debug' });
 }
