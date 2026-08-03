@@ -1400,3 +1400,314 @@ a { color: #d8c69a; }
 
 .debug-hero-row button { padding: 2px 6px; font-size: 10px; min-height: 24px; min-width: 24px; }
 
+
+/* ============================================
+   Phase 4: ¹Öñ± / ¼²²¡ / ÊÎÆ· / Â¶Óª UI
+   ============================================ */
+
+.hero-quirk-panel,
+.hero-disease-panel,
+.trinket-inventory-panel,
+.trinket-equip-panel,
+.sanatorium-service-panel,
+.medium-quest-card,
+.phase4-debug-panel,
+.camp-food-panel,
+.camp-activity-panel,
+.camp-result-panel,
+.camp-point-bar,
+.night-ambush-overlay {
+  font-size: 13px;
+  color: #d8c8a8;
+}
+
+.quirk-section,
+.sanatorium-section,
+.camp-result-section {
+  margin: 8px 0;
+}
+
+.quirk-section-label {
+  font-size: 11px;
+  color: #b89c6e;
+  margin-bottom: 4px;
+}
+
+.quirk-list,
+.disease-list,
+.trinket-list,
+.buff-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.quirk-card,
+.disease-card,
+.trinket-card,
+.sanatorium-row,
+.camp-food-card,
+.camp-activity-card,
+.medium-quest-card,
+.buff-item {
+  background: #1a1410;
+  border: 1px solid #3a2c1e;
+  border-radius: 4px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 44px;
+}
+
+.quirk-card.positive { border-left: 3px solid #6db96d; }
+.quirk-card.negative { border-left: 3px solid #c95e4a; }
+.quirk-card.locked { background: #1f1a14; }
+
+.quirk-name,
+.disease-name,
+.trinket-id,
+.camp-food-name,
+.camp-activity-name,
+.row-label {
+  font-weight: bold;
+  color: #e8d8b8;
+  font-size: 13px;
+}
+
+.quirk-desc,
+.disease-desc,
+.camp-food-desc,
+.camp-activity-desc,
+.quest-card-desc {
+  font-size: 11px;
+  color: #a89878;
+  line-height: 1.4;
+}
+
+.quirk-locked-tag,
+.guard-badge,
+.guard-pill,
+.guard-tag {
+  background: #6db96d;
+  color: #1a1410;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.sanatorium-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.sanatorium-row .row-cost { margin-left: auto; color: #d8b86e; font-size: 11px; }
+.sanatorium-row button { font-size: 11px; padding: 4px 8px; min-height: 32px; }
+
+.medium-quest-card.medium { border-left: 3px solid #c98a3e; }
+.medium-quest-card.short { border-left: 3px solid #6db96d; }
+
+.quest-length-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+.quest-length-tag.tag-medium { background: #c98a3e; color: #1a1410; }
+.quest-length-tag.tag-short { background: #6db96d; color: #1a1410; }
+
+.quest-card-stats { display: flex; flex-direction: column; gap: 3px; }
+.stat-row { display: flex; justify-content: space-between; font-size: 11px; padding: 2px 0; }
+.stat-row > span:first-child { color: #a89878; }
+
+.disease-tag,
+.class-tag,
+.provision-tag,
+.reward-tag {
+  display: inline-block;
+  background: #2a1f15;
+  color: #c8a878;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 6px;
+  margin: 1px 2px 1px 0;
+}
+
+.quest-fail { color: #c95e4a; font-size: 11px; }
+
+.camp-food-choices,
+.camp-activity-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.camp-food-card.locked { opacity: 0.5; cursor: not-allowed; }
+.camp-food-stats,
+.camp-activity-cost {
+  font-size: 10px;
+  color: #a89878;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.camp-food-stats .good { color: #6db96d; }
+.camp-food-stats .bad { color: #c95e4a; }
+.camp-food-risk { font-size: 10px; color: #8a7a5e; font-style: italic; }
+
+.camp-points-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1a1410;
+  padding: 6px 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.camp-point-bar .bar-track {
+  flex: 1;
+  height: 8px;
+  background: #0a0805;
+  border-radius: 4px;
+  position: relative;
+}
+.camp-point-bar .bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #c98a3e, #6db96d);
+  border-radius: 4px;
+}
+.camp-point-bar .bar-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #fff;
+}
+.camp-point-bar .status-pill {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: #3a2c1e;
+  color: #c8a878;
+}
+
+.camp-finish-row { margin-top: 8px; display: flex; justify-content: flex-end; }
+
+.camp-result-row {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0;
+  font-size: 12px;
+}
+.result-label { color: #a89878; }
+.result-value { color: #e8d8b8; font-weight: bold; }
+
+.camp-activity-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 4px 0 8px;
+}
+.camp-activity-pill {
+  background: #2a1f15;
+  color: #c8a878;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
+.ambush-result { padding: 8px; border-radius: 4px; }
+.ambush-result.guarded { background: #1a3018; border: 1px solid #6db96d; }
+.ambush-result.triggered { background: #301a18; border: 1px solid #c95e4a; }
+.ambush-narrative { font-size: 12px; color: #e8d8b8; }
+.ambush-outcome { font-size: 11px; color: #c8a878; margin-top: 4px; }
+
+.buff-item {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+.buff-source { font-weight: bold; }
+.buff-tag {
+  background: #2a1f15;
+  color: #c98a3e;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+
+.night-ambush-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+}
+.overlay-card {
+  position: relative;
+  background: #1a1410;
+  border: 2px solid #c98a3e;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 360px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tone-good .overlay-card { border-color: #6db96d; }
+.tone-bad .overlay-card { border-color: #c95e4a; }
+.overlay-title { font-size: 18px; color: #c98a3e; margin: 0; }
+.overlay-narrative { font-size: 14px; color: #e8d8b8; line-height: 1.5; }
+.overlay-outcome { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.outcome-label { color: #a89878; }
+.outcome-value { color: #c98a3e; font-weight: bold; }
+.effect-line { font-size: 12px; padding: 2px 0; }
+.effect-line.warn { color: #c95e4a; }
+.overlay-actions { display: flex; gap: 8px; }
+.overlay-actions button { flex: 1; min-height: 44px; }
+
+.phase4-debug-panel {
+  background: #0a0805;
+  border: 1px solid #3a2c1e;
+  border-radius: 4px;
+  padding: 10px;
+  font-size: 12px;
+}
+.phase4-debug-panel .debug-section { margin: 8px 0; padding-bottom: 8px; border-bottom: 1px solid #2a1f15; }
+.phase4-debug-panel .debug-section:last-child { border-bottom: none; }
+.phase4-debug-panel h4 { color: #c98a3e; font-size: 13px; margin: 0 0 4px; }
+.phase4-debug-panel label { display: flex; align-items: center; gap: 6px; margin: 4px 0; font-size: 11px; }
+.phase4-debug-panel select, .phase4-debug-panel input { background: #1a1410; color: #d8c8a8; border: 1px solid #3a2c1e; padding: 2px 4px; border-radius: 3px; }
+.phase4-debug-panel button { background: #3a2c1e; color: #e8d8b8; border: 1px solid #5a4c3e; padding: 4px 8px; border-radius: 3px; cursor: pointer; min-height: 32px; }
+
+.camp-tag {
+  display: inline-block;
+  background: #2a1f15;
+  color: #c8a878;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  margin: 1px;
+}
+
+@media (max-width: 480px) {
+  .camp-food-choices,
+  .camp-activity-choices {
+    grid-template-columns: 1fr;
+  }
+  .overlay-card { width: 95%; padding: 14px; }
+  .medium-quest-card { padding: 6px; }
+}
