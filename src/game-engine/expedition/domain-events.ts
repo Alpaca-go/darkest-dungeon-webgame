@@ -97,7 +97,25 @@ export type ExpeditionDomainEventType =
   | 'OBSTACLE_RESOLVED'
   // 决策生命周期
   | 'DECISION_CREATED'
-  | 'DECISION_RESOLVED';
+  | 'DECISION_RESOLVED'
+  // Phase 3 庄园
+  | 'EXPEDITION_RETURNED'
+  | 'WEEK_ADVANCED'
+  | 'HAMLET_MODE_CHANGED'
+  | 'HERO_RECRUITED'
+  | 'HERO_DISMISSED'
+  | 'HERO_ASSIGNED_TO_FACILITY'
+  | 'HERO_REMOVED_FROM_FACILITY'
+  | 'FACILITY_UPGRADED'
+  | 'HERO_SKILL_UPGRADED'
+  | 'HERO_WEAPON_UPGRADED'
+  | 'HERO_ARMOR_UPGRADED'
+  | 'QUEST_SELECTED'
+  | 'PARTY_SET'
+  | 'PROVISION_ADDED'
+  | 'PROVISION_REMOVED'
+  | 'PROVISION_SETTLED'
+  | 'EXPEDITION_STARTED_FROM_HAMLET';
 
 export interface BaseDomainEvent<T extends ExpeditionDomainEventType, P> {
   id: string;
@@ -465,6 +483,36 @@ export type OverlayDismissedPayload = {
   overlayKind: string;
 };
 
+// ----- Phase 3 庄园事件 Payloads -----
+
+export type ExpeditionReturnedPayload = {
+  expeditionId: string;
+  succeeded: boolean;
+  heroIds: string[];
+  deathCount: number;
+  lootSummary: { gold: number; portraits: number; crests: number };
+};
+export type WeekAdvancedPayload = {
+  newWeek: number;
+  facilityCompleted: { heroId: string; serviceId: string }[];
+  notices: { id: string; type: string; priority: number; message: string }[];
+};
+export type HamletModeChangedPayload = { mode: string };
+export type HeroRecruitedPayload = { heroId: string; candidateId: string };
+export type HeroDismissedPayload = { heroId: string };
+export type HeroAssignedToFacilityPayload = { heroId: string; facilityId: string; serviceId: string };
+export type HeroRemovedFromFacilityPayload = { heroId: string; facilityId: string };
+export type FacilityUpgradedPayload = { facilityId: string; upgradeOptionId: string; newLevel: number };
+export type HeroSkillUpgradedPayload = { heroId: string; skillId: string; newLevel: number };
+export type HeroWeaponUpgradedPayload = { heroId: string; newLevel: number };
+export type HeroArmorUpgradedPayload = { heroId: string; newLevel: number };
+export type QuestSelectedPayload = { questId: string };
+export type PartySetPayload = { heroIds: string[] };
+export type ProvisionAddedPayload = { itemId: string; count: number };
+export type ProvisionRemovedPayload = { itemId: string; count: number };
+export type ProvisionSettledPayload = { totalCost: number };
+export type ExpeditionStartedFromHamletPayload = { heroIds: string[]; questId: string | null };
+
 // ----- 联合类型 -----
 
 export type ExpeditionDomainEvent =
@@ -546,4 +594,22 @@ export type ExpeditionDomainEvent =
   | BaseDomainEvent<'HERO_REMOVED_FROM_PARTY', HeroRemovedFromPartyPayload>
   | BaseDomainEvent<'TACTICAL_OPTIONS_REGENERATED', TacticalOptionsRegeneratedPayload>
   | BaseDomainEvent<'OVERLAY_SHOWN', OverlayShownPayload>
-  | BaseDomainEvent<'OVERLAY_DISMISSED', OverlayDismissedPayload>;
+  | BaseDomainEvent<'OVERLAY_DISMISSED', OverlayDismissedPayload>
+  // Phase 3 庄园
+  | BaseDomainEvent<'EXPEDITION_RETURNED', ExpeditionReturnedPayload>
+  | BaseDomainEvent<'WEEK_ADVANCED', WeekAdvancedPayload>
+  | BaseDomainEvent<'HAMLET_MODE_CHANGED', HamletModeChangedPayload>
+  | BaseDomainEvent<'HERO_RECRUITED', HeroRecruitedPayload>
+  | BaseDomainEvent<'HERO_DISMISSED', HeroDismissedPayload>
+  | BaseDomainEvent<'HERO_ASSIGNED_TO_FACILITY', HeroAssignedToFacilityPayload>
+  | BaseDomainEvent<'HERO_REMOVED_FROM_FACILITY', HeroRemovedFromFacilityPayload>
+  | BaseDomainEvent<'FACILITY_UPGRADED', FacilityUpgradedPayload>
+  | BaseDomainEvent<'HERO_SKILL_UPGRADED', HeroSkillUpgradedPayload>
+  | BaseDomainEvent<'HERO_WEAPON_UPGRADED', HeroWeaponUpgradedPayload>
+  | BaseDomainEvent<'HERO_ARMOR_UPGRADED', HeroArmorUpgradedPayload>
+  | BaseDomainEvent<'QUEST_SELECTED', QuestSelectedPayload>
+  | BaseDomainEvent<'PARTY_SET', PartySetPayload>
+  | BaseDomainEvent<'PROVISION_ADDED', ProvisionAddedPayload>
+  | BaseDomainEvent<'PROVISION_REMOVED', ProvisionRemovedPayload>
+  | BaseDomainEvent<'PROVISION_SETTLED', ProvisionSettledPayload>
+  | BaseDomainEvent<'EXPEDITION_STARTED_FROM_HAMLET', ExpeditionStartedFromHamletPayload>;

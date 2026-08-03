@@ -83,6 +83,8 @@ export interface HamletState {
   recruitCandidates: RecruitCandidate[];
   /** 本周任务 id 列表 */
   weeklyQuestIds: string[];
+  /** 任务定义字典(weeklyQuestIds -> QuestDefinition) */
+  weeklyQuestDefs: Record<string, QuestDefinition>;
   /** 选中的任务(开始远征前) */
   selectedQuestId: string | null;
   /** 选中的远征队伍 hero ids(最多 4) */

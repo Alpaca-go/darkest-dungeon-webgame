@@ -45,6 +45,24 @@ export type GameCommand =
   | { type: 'REQUEST_RETREAT'; commandId: string }
   | { type: 'CONFIRM_RETREAT'; commandId: string }
   | { type: 'CONTINUE_AFTER_RESULT'; commandId: string }
+  // Phase 3 庄园(SPEC §5 §6 §8 §15 §17)
+  | { type: 'COMPLETE_EXPEDITION_RETURN'; commandId: string }
+  | { type: 'ADVANCE_WEEK'; commandId: string }
+  | { type: 'SET_HAMLET_MODE'; mode: 'weekly-summary' | 'roster' | 'treatment' | 'recruitment' | 'upgrades' | 'graveyard' | 'quest-selection' | 'party-formation' | 'provisioning'; commandId: string }
+  | { type: 'RECRUIT_HERO'; candidateId: string; baseActor: { maxHp: number; dodge: number; speed: number; accuracy: number; crit: number; skills: string[]; rank: 1 | 2 | 3 | 4 }; commandId: string }
+  | { type: 'DISMISS_HERO'; heroId: string; commandId: string }
+  | { type: 'ASSIGN_HERO_TO_FACILITY'; heroId: string; facilityId: string; serviceId: string; commandId: string }
+  | { type: 'CANCEL_FACILITY_ASSIGNMENT'; heroId: string; facilityId: string; commandId: string }
+  | { type: 'UPGRADE_FACILITY'; facilityId: string; upgradeOptionId: string; commandId: string }
+  | { type: 'UPGRADE_HERO_SKILL'; heroId: string; skillId: string; commandId: string }
+  | { type: 'UPGRADE_HERO_WEAPON'; heroId: string; commandId: string }
+  | { type: 'UPGRADE_HERO_ARMOR'; heroId: string; commandId: string }
+  | { type: 'SELECT_WEEKLY_QUEST'; questId: string; commandId: string }
+  | { type: 'SET_PARTY'; heroIds: string[]; commandId: string }
+  | { type: 'BUY_PROVISION'; itemId: import('./types.js').ItemId; count: number; commandId: string }
+  | { type: 'REMOVE_PROVISION'; itemId: import('./types.js').ItemId; count: number; commandId: string }
+  | { type: 'SETTLE_PROVISION'; commandId: string }
+  | { type: 'START_SELECTED_EXPEDITION'; commandId: string }
   // Phase 2:精神系统命令(由规则引擎自动派发,UI 不直接调用)
   | { type: 'APPLY_STRESS'; heroId: string; amount: number; source: string; commandId: string }
   | { type: 'RESOLVE_CHECK'; heroId: string; commandId: string }

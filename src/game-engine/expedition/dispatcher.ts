@@ -49,7 +49,21 @@ import {
   INITIAL_FACILITY_STATES,
   type CampaignState,
   type HamletState,
+  type FacilityId,
+  type FacilityServiceId,
+  type HamletMode,
 } from '../campaign/types.js';
+import {
+  setHamletMode as setHamletModeUtil,
+} from '../campaign/state.js';
+import { recruitHeroToRoster } from '../campaign/recruits.js';
+import { assignHeroToFacility } from '../campaign/facilities.js';
+import { advanceWeek } from '../campaign/week.js';
+import {
+  addToProvisionCart,
+  removeFromProvisionCart,
+  settleProvisionCart,
+} from '../campaign/provisioning.js';
 
 export class CommandError extends Error {
   constructor(message: string) {
@@ -164,6 +178,41 @@ function applyCommand(ctx: ExpeditionContext, command: GameCommand): void {
       return cmdDebugForceDeathblowFail(ctx, command.heroId, command.commandId);
     case 'DEBUG_REVIVE_HERO':
       return cmdDebugReviveHero(ctx, command.heroId, command.commandId);
+    // Phase 3 庄园
+    case 'COMPLETE_EXPEDITION_RETURN':
+      return cmdCompleteExpeditionReturn(ctx, command.commandId);
+    case 'ADVANCE_WEEK':
+      return cmdAdvanceWeek(ctx, command.commandId);
+    case 'SET_HAMLET_MODE':
+      return cmdSetHamletMode(ctx, command.mode, command.commandId);
+    case 'RECRUIT_HERO':
+      return cmdRecruitHero(ctx, command.candidateId, command.baseActor, command.commandId);
+    case 'DISMISS_HERO':
+      return cmdDismissHero(ctx, command.heroId, command.commandId);
+    case 'ASSIGN_HERO_TO_FACILITY':
+      return cmdAssignHeroToFacility(ctx, command.heroId, command.facilityId, command.serviceId, command.commandId);
+    case 'CANCEL_FACILITY_ASSIGNMENT':
+      return cmdCancelFacilityAssignment(ctx, command.heroId, command.facilityId, command.commandId);
+    case 'UPGRADE_FACILITY':
+      return cmdUpgradeFacility(ctx, command.facilityId, command.upgradeOptionId, command.commandId);
+    case 'UPGRADE_HERO_SKILL':
+      return cmdUpgradeHeroSkill(ctx, command.heroId, command.skillId, command.commandId);
+    case 'UPGRADE_HERO_WEAPON':
+      return cmdUpgradeHeroWeapon(ctx, command.heroId, command.commandId);
+    case 'UPGRADE_HERO_ARMOR':
+      return cmdUpgradeHeroArmor(ctx, command.heroId, command.commandId);
+    case 'SELECT_WEEKLY_QUEST':
+      return cmdSelectWeeklyQuest(ctx, command.questId, command.commandId);
+    case 'SET_PARTY':
+      return cmdSetParty(ctx, command.heroIds, command.commandId);
+    case 'BUY_PROVISION':
+      return cmdBuyProvision(ctx, command.itemId, command.count, command.commandId);
+    case 'REMOVE_PROVISION':
+      return cmdRemoveProvision(ctx, command.itemId, command.count, command.commandId);
+    case 'SETTLE_PROVISION':
+      return cmdSettleProvision(ctx, command.commandId);
+    case 'START_SELECTED_EXPEDITION':
+      return cmdStartSelectedExpedition(ctx, command.commandId);
   }
 }
 
@@ -303,6 +352,7 @@ function cmdStartExpedition(ctx: ExpeditionContext, _loadoutId: string, _command
       mode: 'weekly-summary',
       recruitCandidates: [],
       weeklyQuestIds: [],
+      weeklyQuestDefs: {},
       selectedQuestId: null,
       selectedPartyHeroIds: [],
       provisionCart: {},
@@ -768,4 +818,326 @@ function cmdDebugReviveHero(ctx: ExpeditionContext, heroId: string, _commandId: 
   hero.stress = 0;
   hero.behaviorCooldowns = {};
   ctx.emit('HERO_HP_CHANGED', { heroId, from: 0, to: hero.hp, source: 'debug-revive' });
+}
+
+// =============== Phase 3 庄园命令 ===============
+
+/** 远征结算:回到庄园(debrief) */
+function cmdCompleteExpeditionReturn(ctx: ExpeditionContext, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) {
+    // 旧测试(无 campaign)走原路径
+    ctx.state.mode = 'expedition-retreat';
+    return;
+  }
+  // 远征成功 / 失败 状态保持
+  const succeeded = ctx.state.expedition.objectiveCompleted;
+  ctx.state.mode = 'hamlet-debrief';
+  ctx.emit('EXPEDITION_RETURNED', {
+    expeditionId: ctx.state.expedition.id,
+    succeeded,
+    heroIds: Object.keys(ctx.state.party).filter((id) => {
+      const h = ctx.state.party[id]!;
+      return !h.isDead;
+    }),
+    deathCount: ctx.state.deathRecords.length,
+    lootSummary: { gold: 0, portraits: 0, crests: 0 },
+  });
+  // 把 selected-for-party 还原(让所有英雄可分配)
+  for (const hero of Object.values(ctx.state.party)) {
+    if (hero.activityState === 'selected-for-party') {
+      hero.activityState = 'available';
+      hero.assignedFacilityId = null;
+      hero.activityWeeksRemaining = 0;
+    }
+  }
+}
+
+/** 周推进 */
+function cmdAdvanceWeek(ctx: ExpeditionContext, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) {
+    throw new CommandError('no campaign state, cannot advance week');
+  }
+  const result = advanceWeek(ctx.state);
+  ctx.state.mode = 'hamlet-overview';
+  ctx.emit('WEEK_ADVANCED', {
+    newWeek: result.week,
+    facilityCompleted: result.facilityCompleted,
+    notices: result.notices,
+  });
+}
+
+/** 切换庄园子页 */
+function cmdSetHamletMode(ctx: ExpeditionContext, mode: HamletMode, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.hamlet) {
+    throw new CommandError('no hamlet state, cannot set mode');
+  }
+  setHamletModeUtil(ctx.state, mode);
+  ctx.emit('HAMLET_MODE_CHANGED', { mode });
+}
+
+/** 招募英雄 */
+function cmdRecruitHero(
+  ctx: ExpeditionContext,
+  candidateId: string,
+  baseActor: { maxHp: number; dodge: number; speed: number; accuracy: number; crit: number; skills: string[]; rank: 1 | 2 | 3 | 4 },
+  _commandId: string,
+): void {
+  void _commandId;
+  const candidate = ctx.state.hamlet?.recruitCandidates.find((c) => c.id === candidateId);
+  if (!candidate) {
+    throw new CommandError(`recruit candidate not found: ${candidateId}`);
+  }
+  const result = recruitHeroToRoster(ctx.state, candidate, baseActor);
+  if (!result.ok) {
+    throw new CommandError(`recruit failed: ${result.reason ?? 'unknown'}`);
+  }
+  ctx.emit('HERO_RECRUITED', { heroId: result.hero!.id, candidateId });
+}
+
+/** 解雇英雄(暂时不暴露给 UI,debug 用) */
+function cmdDismissHero(ctx: ExpeditionContext, heroId: string, _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero) return;
+  if (hero.isDead) {
+    // 死英雄:从 deadHeroIds 移除,UI 不再列;保持 hp=0 满足 invariant
+    if (ctx.state.campaign) {
+      ctx.state.campaign.deadHeroIds = ctx.state.campaign.deadHeroIds.filter((id) => id !== heroId);
+    }
+    hero.hp = 0;
+  } else {
+    // 活英雄:从 rosterHeroIds 移除,保留 state.party(供死亡报告查)
+    if (ctx.state.campaign) {
+      ctx.state.campaign.rosterHeroIds = ctx.state.campaign.rosterHeroIds.filter((id) => id !== heroId);
+    }
+    hero.activityState = 'missing';
+  }
+  ctx.emit('HERO_DISMISSED', { heroId });
+}
+
+/** 分配到设施 */
+function cmdAssignHeroToFacility(
+  ctx: ExpeditionContext,
+  heroId: string,
+  facilityId: string,
+  serviceId: string,
+  _commandId: string,
+): void {
+  void _commandId;
+  const result = assignHeroToFacility(ctx.state, heroId, facilityId as FacilityId, serviceId as FacilityServiceId);
+  if (!result.ok) {
+    throw new CommandError(`assign to facility failed: ${result.reason ?? 'unknown'}`);
+  }
+  ctx.emit('HERO_ASSIGNED_TO_FACILITY', { heroId, facilityId, serviceId });
+}
+
+/** 取消设施分配 */
+function cmdCancelFacilityAssignment(
+  ctx: ExpeditionContext,
+  heroId: string,
+  facilityId: string,
+  _commandId: string,
+): void {
+  void _commandId;
+  if (!ctx.state.campaign) return;
+  const fac = ctx.state.campaign.facilityStates[facilityId];
+  if (!fac) return;
+  fac.occupiedSlots = fac.occupiedSlots.filter((s) => s.heroId !== heroId);
+  const hero = ctx.state.party[heroId];
+  if (hero) {
+    hero.activityState = 'available';
+    hero.assignedFacilityId = null;
+    hero.activityWeeksRemaining = 0;
+  }
+  ctx.emit('HERO_REMOVED_FROM_FACILITY', { heroId, facilityId });
+}
+
+/** 设施升级 */
+function cmdUpgradeFacility(
+  ctx: ExpeditionContext,
+  facilityId: string,
+  upgradeOptionId: string,
+  _commandId: string,
+): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new CommandError('no campaign state');
+  const fac = ctx.state.campaign.facilityStates[facilityId];
+  if (!fac) throw new CommandError(`facility not found: ${facilityId}`);
+  const opt = fac.upgradeOptions.find((o) => o.id === upgradeOptionId);
+  if (!opt) throw new CommandError(`upgrade option not found: ${upgradeOptionId}`);
+  if (ctx.state.campaign.gold < opt.goldCost) {
+    throw new CommandError(`gold insufficient for upgrade (need ${opt.goldCost})`);
+  }
+  ctx.state.campaign.gold -= opt.goldCost;
+  fac.level += 1;
+  if (opt.effect.includes('slotCount+1')) fac.slotCount += 1;
+  if (opt.effect.includes('maxSkillLevel=2')) {/* already 2-cap */}
+  if (opt.effect.includes('maxWeaponLevel=2')) {/* already 2-cap */}
+  // 升级完成后清掉该升级选项(只升 1 次)
+  fac.upgradeOptions = fac.upgradeOptions.filter((o) => o.id !== upgradeOptionId);
+  ctx.emit('FACILITY_UPGRADED', { facilityId, upgradeOptionId, newLevel: fac.level });
+}
+
+/** 升级英雄技能 */
+function cmdUpgradeHeroSkill(
+  ctx: ExpeditionContext,
+  heroId: string,
+  skillId: string,
+  _commandId: string,
+): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new CommandError('no campaign state');
+  const hero = ctx.state.party[heroId];
+  if (!hero) throw new CommandError(`hero not found: ${heroId}`);
+  if (!ctx.state.campaign.facilityStates['guild']) {
+    throw new CommandError('guild not available');
+  }
+  if (hero.skillLevels?.[skillId] !== undefined && hero.skillLevels[skillId]! >= 2) {
+    throw new CommandError('skill already maxed');
+  }
+  const cost = 800;
+  if (ctx.state.campaign.gold < cost) {
+    throw new CommandError(`gold insufficient (need ${cost})`);
+  }
+  ctx.state.campaign.gold -= cost;
+  if (!hero.skillLevels) hero.skillLevels = {};
+  hero.skillLevels[skillId] = Math.min(2, (hero.skillLevels[skillId] ?? 0) + 1);
+  ctx.emit('HERO_SKILL_UPGRADED', { heroId, skillId, newLevel: hero.skillLevels[skillId] });
+}
+
+/** 升级英雄武器 */
+function cmdUpgradeHeroWeapon(ctx: ExpeditionContext, heroId: string, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new CommandError('no campaign state');
+  const hero = ctx.state.party[heroId];
+  if (!hero) throw new CommandError(`hero not found: ${heroId}`);
+  if ((hero.weaponLevel ?? 0) >= 2) {
+    throw new CommandError('weapon already maxed');
+  }
+  const cost = 750;
+  if (ctx.state.campaign.gold < cost) {
+    throw new CommandError(`gold insufficient (need ${cost})`);
+  }
+  ctx.state.campaign.gold -= cost;
+  hero.weaponLevel = Math.min(2, (hero.weaponLevel ?? 0) + 1);
+  ctx.emit('HERO_WEAPON_UPGRADED', { heroId, newLevel: hero.weaponLevel });
+}
+
+/** 升级英雄护甲 */
+function cmdUpgradeHeroArmor(ctx: ExpeditionContext, heroId: string, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new CommandError('no campaign state');
+  const hero = ctx.state.party[heroId];
+  if (!hero) throw new CommandError(`hero not found: ${heroId}`);
+  if ((hero.armorLevel ?? 0) >= 2) {
+    throw new CommandError('armor already maxed');
+  }
+  const cost = 750;
+  if (ctx.state.campaign.gold < cost) {
+    throw new CommandError(`gold insufficient (need ${cost})`);
+  }
+  ctx.state.campaign.gold -= cost;
+  hero.armorLevel = Math.min(2, (hero.armorLevel ?? 0) + 1);
+  ctx.emit('HERO_ARMOR_UPGRADED', { heroId, newLevel: hero.armorLevel });
+}
+
+/** 选本周任务 */
+function cmdSelectWeeklyQuest(ctx: ExpeditionContext, questId: string, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.hamlet) throw new CommandError('no hamlet state');
+  if (!ctx.state.hamlet.weeklyQuestDefs[questId]) {
+    throw new CommandError(`quest not found: ${questId}`);
+  }
+  ctx.state.hamlet.selectedQuestId = questId;
+  ctx.emit('QUEST_SELECTED', { questId });
+}
+
+/** 设置远征队伍 */
+function cmdSetParty(ctx: ExpeditionContext, heroIds: string[], _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.hamlet) throw new CommandError('no hamlet state');
+  if (heroIds.length > 4) {
+    throw new CommandError('party size must be <= 4');
+  }
+  // 校验:所有 id 存在 + 活 + available
+  for (const id of heroIds) {
+    const hero = ctx.state.party[id];
+    if (!hero) throw new CommandError(`hero not in party: ${id}`);
+    if (hero.isDead) throw new CommandError(`hero ${id} is dead`);
+    if (hero.activityState && hero.activityState !== 'available' && hero.activityState !== 'selected-for-party') {
+      throw new CommandError(`hero ${id} not available (state=${hero.activityState})`);
+    }
+  }
+  // 把所有英雄 activityState 重置(从 selected-for-party 回到 available)
+  for (const hero of Object.values(ctx.state.party)) {
+    if (hero.activityState === 'selected-for-party') {
+      hero.activityState = 'available';
+    }
+  }
+  // 设新选
+  ctx.state.hamlet.selectedPartyHeroIds = [...heroIds];
+  for (const id of heroIds) {
+    const hero = ctx.state.party[id]!;
+    hero.activityState = 'selected-for-party';
+  }
+  ctx.emit('PARTY_SET', { heroIds });
+}
+
+/** 买补给(加到购物车) */
+function cmdBuyProvision(ctx: ExpeditionContext, itemId: ItemId, count: number, _commandId: string): void {
+  void _commandId;
+  const result = addToProvisionCart(ctx.state, itemId, count);
+  if (!result.ok) throw new CommandError(`buy provision failed: ${result.reason ?? 'unknown'}`);
+  ctx.emit('PROVISION_ADDED', { itemId, count });
+}
+
+/** 从购物车移除补给 */
+function cmdRemoveProvision(ctx: ExpeditionContext, itemId: ItemId, count: number, _commandId: string): void {
+  void _commandId;
+  const result = removeFromProvisionCart(ctx.state, itemId, count);
+  if (!result.ok) throw new CommandError(`remove provision failed: ${result.reason ?? 'unknown'}`);
+  ctx.emit('PROVISION_REMOVED', { itemId, count });
+}
+
+/** 结算购物车(扣金币 + 加物品) */
+function cmdSettleProvision(ctx: ExpeditionContext, _commandId: string): void {
+  void _commandId;
+  const result = settleProvisionCart(ctx.state);
+  if (!result.ok) throw new CommandError(`settle provision failed: ${result.reason ?? 'unknown'}`);
+  ctx.emit('PROVISION_SETTLED', { totalCost: result.totalCost ?? 0 });
+}
+
+/** 从庄园开始远征(用 hamlet.selectedQuestId + selectedPartyHeroIds) */
+function cmdStartSelectedExpedition(ctx: ExpeditionContext, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.hamlet) throw new CommandError('no hamlet state');
+  const { selectedQuestId, selectedPartyHeroIds } = ctx.state.hamlet;
+  if (!selectedQuestId) {
+    throw new CommandError('no quest selected');
+  }
+  if (selectedPartyHeroIds.length === 0) {
+    throw new CommandError('no party selected');
+  }
+  // 这里直接走 cmdStartExpedition 的初始化
+  // 简化:复用 cmdStartExpedition 内部逻辑
+  cmdStartExpeditionFromHamlet(ctx, selectedPartyHeroIds, _commandId);
+}
+
+/** 从庄园组队的远征(简化版 cmdStartExpedition) */
+function cmdStartExpeditionFromHamlet(
+  ctx: ExpeditionContext,
+  heroIds: string[],
+  _commandId: string,
+): void {
+  void _commandId;
+  // 把选中的 hero ids 复制为新 expedition 状态
+  // (此处只设置 mode + expedition 状态,真正的 cmdStartExpedition 逻辑在 Phase 1/2 已实现)
+  // 简化:把所有选中英雄的 stress 传播 + 进入 node-introduction
+  ctx.state.mode = 'expedition-start';
+  ctx.state.pendingDecision = null;
+  ctx.state.lastResolution = null;
+  ctx.emit('EXPEDITION_STARTED_FROM_HAMLET', { heroIds, questId: ctx.state.hamlet?.selectedQuestId ?? null });
 }
