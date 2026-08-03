@@ -64,6 +64,18 @@ import {
   removeFromProvisionCart,
   settleProvisionCart,
 } from '../campaign/provisioning.js';
+import {
+  acquireQuirk,
+  removeNegativeQuirk,
+  lockPositiveQuirk,
+  getQuirkDef,
+  isPositiveQuirk,
+} from '../quirks/index.js';
+import {
+  acquireDisease,
+  treatDisease,
+  getDiseaseDef,
+} from '../diseases/index.js';
 
 export class CommandError extends Error {
   constructor(message: string) {
@@ -213,6 +225,17 @@ function applyCommand(ctx: ExpeditionContext, command: GameCommand): void {
       return cmdSettleProvision(ctx, command.commandId);
     case 'START_SELECTED_EXPEDITION':
       return cmdStartSelectedExpedition(ctx, command.commandId);
+    // Phase 4 怪癖 + 疾病
+    case 'GRANT_QUIRK':
+      return cmdGrantQuirk(ctx, command.heroId, command.quirkId, command.commandId);
+    case 'REMOVE_QUIRK':
+      return cmdRemoveQuirk(ctx, command.heroId, command.quirkId, command.commandId);
+    case 'LOCK_POSITIVE_QUIRK':
+      return cmdLockPositiveQuirk(ctx, command.heroId, command.quirkId, command.commandId);
+    case 'GRANT_DISEASE':
+      return cmdGrantDisease(ctx, command.heroId, command.diseaseId, command.source, command.commandId);
+    case 'TREAT_DISEASE':
+      return cmdTreatDisease(ctx, command.heroId, command.diseaseId, command.commandId);
   }
 }
 
@@ -1140,4 +1163,83 @@ function cmdStartExpeditionFromHamlet(
   ctx.state.pendingDecision = null;
   ctx.state.lastResolution = null;
   ctx.emit('EXPEDITION_STARTED_FROM_HAMLET', { heroIds, questId: ctx.state.hamlet?.selectedQuestId ?? null });
+}
+
+// =============== Phase 4 怪癖 + 疾病 ===============
+
+/** 授予一个怪癖(事件/奇物/治疗结果触发,SPEC §4.1) */
+function cmdGrantQuirk(ctx: ExpeditionContext, heroId: string, quirkId: string, _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero) throw new CommandError(`hero not found: ${heroId}`);
+  if (!getQuirkDef(quirkId)) throw new CommandError(`unknown quirk: ${quirkId}`);
+  const result = acquireQuirk(hero, quirkId);
+  if (!result.ok) {
+    throw new CommandError(`grant quirk failed: ${result.reason}`);
+  }
+  if (result.replacedId) {
+    ctx.emit('QUIRK_REPLACED', { heroId, oldQuirkId: result.replacedId, newQuirkId: quirkId });
+  }
+  ctx.emit('QUIRK_GAINED', { heroId, quirkId, replacedId: result.replacedId, source: 'event' });
+}
+
+/** 移除一个负向怪癖(疗养院 quirk-removal 触发) */
+function cmdRemoveQuirk(ctx: ExpeditionContext, heroId: string, quirkId: string, _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero) throw new CommandError(`hero not found: ${heroId}`);
+  if (isPositiveQuirk(quirkId)) {
+    throw new CommandError(`cannot remove positive quirk ${quirkId} via REMOVE_QUIRK`);
+  }
+  const result = removeNegativeQuirk(hero, quirkId);
+  if (!result.ok) {
+    throw new CommandError(`remove quirk failed: ${result.reason}`);
+  }
+  ctx.emit('QUIRK_REMOVED', { heroId, quirkId, costGold: 0 });
+}
+
+/** 锁定一个正面怪癖(疗养院 lock-positive 触发) */
+function cmdLockPositiveQuirk(ctx: ExpeditionContext, heroId: string, quirkId: string, _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero) throw new CommandError(`hero not found: ${heroId}`);
+  const result = lockPositiveQuirk(hero, quirkId);
+  if (!result.ok) {
+    throw new CommandError(`lock quirk failed: ${result.reason}`);
+  }
+  ctx.emit('QUIRK_LOCKED', { heroId, quirkId });
+}
+
+/** 授予一个疾病 */
+function cmdGrantDisease(ctx: ExpeditionContext, heroId: string, diseaseId: string, source: string, _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero) throw new CommandError(`hero not found: ${heroId}`);
+  if (!getDiseaseDef(diseaseId)) throw new CommandError(`unknown disease: ${diseaseId}`);
+  const result = acquireDisease(hero, diseaseId, source as any);
+  if (!result.ok) {
+    throw new CommandError(`grant disease failed: ${result.reason}`);
+  }
+  ctx.emit('DISEASE_GAINED', { heroId, diseaseId, source });
+}
+
+/** 治疗一个疾病(疗养院 disease-treatment 触发) */
+function cmdTreatDisease(ctx: ExpeditionContext, heroId: string, diseaseId: string, _commandId: string): void {
+  void _commandId;
+  const hero = ctx.state.party[heroId];
+  if (!hero) throw new CommandError(`hero not found: ${heroId}`);
+  if (!ctx.state.campaign) throw new CommandError('no campaign state');
+  // 设施等级从 sanitarium 拿
+  const sanitariumLevel = ctx.state.campaign.facilityStates['sanitarium']?.level ?? 1;
+  const heroLevel = hero.resolveLevel ?? 0;
+  const result = treatDisease(hero, diseaseId, heroLevel, sanitariumLevel);
+  if (!result.ok) {
+    throw new CommandError(`treat disease failed: ${result.reason}`);
+  }
+  // 扣金币
+  if (ctx.state.campaign.gold < result.costGold) {
+    throw new CommandError(`gold insufficient (need ${result.costGold})`);
+  }
+  ctx.state.campaign.gold -= result.costGold;
+  ctx.emit('DISEASE_TREATED', { heroId, diseaseId, costGold: result.costGold });
 }

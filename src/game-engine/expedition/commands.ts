@@ -63,6 +63,12 @@ export type GameCommand =
   | { type: 'REMOVE_PROVISION'; itemId: import('./types.js').ItemId; count: number; commandId: string }
   | { type: 'SETTLE_PROVISION'; commandId: string }
   | { type: 'START_SELECTED_EXPEDITION'; commandId: string }
+  // Phase 4:怪癖 + 疾病
+  | { type: 'GRANT_QUIRK'; heroId: string; quirkId: string; commandId: string }
+  | { type: 'REMOVE_QUIRK'; heroId: string; quirkId: string; commandId: string }
+  | { type: 'LOCK_POSITIVE_QUIRK'; heroId: string; quirkId: string; commandId: string }
+  | { type: 'GRANT_DISEASE'; heroId: string; diseaseId: string; source: string; commandId: string }
+  | { type: 'TREAT_DISEASE'; heroId: string; diseaseId: string; commandId: string }
   // Phase 2:精神系统命令(由规则引擎自动派发,UI 不直接调用)
   | { type: 'APPLY_STRESS'; heroId: string; amount: number; source: string; commandId: string }
   | { type: 'RESOLVE_CHECK'; heroId: string; commandId: string }

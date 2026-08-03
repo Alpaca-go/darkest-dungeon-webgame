@@ -101,7 +101,7 @@ export interface HamletState {
 
 export type FacilityId = 'wagon' | 'tavern' | 'abbey' | 'sanitarium' | 'guild' | 'blacksmith' | 'provision-shop';
 
-export type FacilityServiceId = 'recruit' | 'stress-tavern' | 'stress-abbey' | 'quirk-removal' | 'disease-treatment' | 'skill-upgrade' | 'weapon-upgrade' | 'armor-upgrade' | 'provision-buy' | 'facility-upgrade';
+export type FacilityServiceId = 'recruit' | 'stress-tavern' | 'stress-abbey' | 'quirk-removal' | 'disease-treatment' | 'lock-positive-quirk' | 'skill-upgrade' | 'weapon-upgrade' | 'armor-upgrade' | 'provision-buy' | 'facility-upgrade';
 
 export interface FacilityAssignment {
   heroId: string;

@@ -296,6 +296,8 @@ export interface HeroInstance {
   positiveQuirkIds?: string[];
   /** 负面怪癖 id 列表 */
   negativeQuirkIds?: string[];
+  /** 锁定的正面怪癖 id 列表(疗养院 lock-positive 后) */
+  lockedPositiveQuirkIds?: string[];
   /** 疾病 id 列表(Phase 4 接入) */
   diseaseIds?: string[];
   /** 当前活动状态 */

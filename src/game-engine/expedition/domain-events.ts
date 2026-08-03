@@ -115,7 +115,35 @@ export type ExpeditionDomainEventType =
   | 'PROVISION_ADDED'
   | 'PROVISION_REMOVED'
   | 'PROVISION_SETTLED'
-  | 'EXPEDITION_STARTED_FROM_HAMLET';
+  | 'EXPEDITION_STARTED_FROM_HAMLET'
+  // Phase 4:怪癖 + 疾病
+  | 'QUIRK_GAINED'
+  | 'QUIRK_REPLACED'
+  | 'QUIRK_LOCKED'
+  | 'QUIRK_REMOVED'
+  | 'QUIRK_BEHAVIOR_TRIGGERED'
+  | 'DISEASE_GAINED'
+  | 'DISEASE_TREATED'
+  | 'TRINKET_LOOTED'
+  | 'TRINKET_EQUIPPED'
+  | 'TRINKET_UNEQUIPPED'
+  | 'TRINKET_LOST'
+  | 'TRINKET_RECOVERED'
+  | 'HERO_RESOLVE_LEVEL_INCREASED'
+  | 'HERO_SKILL_LEVEL_INCREASED'
+  | 'HERO_WEAPON_LEVEL_INCREASED'
+  | 'HERO_ARMOR_LEVEL_INCREASED'
+  | 'CAMP_STARTED'
+  | 'CAMP_FOOD_CONSUMED'
+  | 'CAMP_ACTIVITY_SELECTED'
+  | 'CAMP_POINTS_SPENT'
+  | 'CAMP_BUFF_APPLIED'
+  | 'CAMP_STRESS_REDUCED'
+  | 'CAMP_HEALING_APPLIED'
+  | 'NIGHT_AMBUSH_CHECK_STARTED'
+  | 'NIGHT_AMBUSH_PREVENTED'
+  | 'NIGHT_AMBUSH_TRIGGERED'
+  | 'CAMP_COMPLETED';
 
 export interface BaseDomainEvent<T extends ExpeditionDomainEventType, P> {
   id: string;
@@ -513,6 +541,36 @@ export type ProvisionRemovedPayload = { itemId: string; count: number };
 export type ProvisionSettledPayload = { totalCost: number };
 export type ExpeditionStartedFromHamletPayload = { heroIds: string[]; questId: string | null };
 
+// ----- Phase 4 怪癖 + 疾病 + 饰品 + 成长 + 露营 + 夜袭 Payloads -----
+
+export type QuirkGainedPayload = { heroId: string; quirkId: string; replacedId?: string; source: string };
+export type QuirkReplacedPayload = { heroId: string; oldQuirkId: string; newQuirkId: string };
+export type QuirkLockedPayload = { heroId: string; quirkId: string };
+export type QuirkRemovedPayload = { heroId: string; quirkId: string; costGold: number };
+export type QuirkBehaviorTriggeredPayload = { heroId: string; quirkId: string; effect: string; narrative: string };
+export type DiseaseGainedPayload = { heroId: string; diseaseId: string; source: string };
+export type DiseaseTreatedPayload = { heroId: string; diseaseId: string; costGold: number };
+export type TrinketLootedPayload = { trinketInstanceId: string; definitionId: string; source: string };
+export type TrinketEquippedPayload = { heroId: string; trinketInstanceId: string; slotIndex: number };
+export type TrinketUnequippedPayload = { heroId: string; slotIndex: number };
+export type TrinketLostPayload = { heroId: string; trinketInstanceId: string; cause: 'death' | 'discard' };
+export type TrinketRecoveredPayload = { heroId: string; trinketInstanceId: string };
+export type HeroResolveLevelIncreasedPayload = { heroId: string; newLevel: number };
+export type HeroSkillLevelIncreasedPayload = { heroId: string; skillId: string; newLevel: number };
+export type HeroWeaponLevelIncreasedPayload = { heroId: string; newLevel: number };
+export type HeroArmorLevelIncreasedPayload = { heroId: string; newLevel: number };
+export type CampStartedPayload = { nodeId: string; totalPoints: number };
+export type CampFoodConsumedPayload = { foodSpent: number; choice: 'feast' | 'normal' | 'frugal' | 'none' };
+export type CampActivitySelectedPayload = { activityId: string; targetHeroId?: string; costPoints: number };
+export type CampPointsSpentPayload = { remainingPoints: number };
+export type CampBuffAppliedPayload = { buffId: string; sourceId: string };
+export type CampStressReducedPayload = { heroId: string; amount: number };
+export type CampHealingAppliedPayload = { heroId: string; amount: number };
+export type NightAmbushCheckStartedPayload = { roll: number; prevented: boolean };
+export type NightAmbushPreventedPayload = { reason: string };
+export type NightAmbushTriggeredPayload = { outcome: 'stress' | 'torch' | 'food' | 'formation' | 'disease' | 'ambush' };
+export type CampCompletedPayload = { totalBuffsApplied: number; totalStressReduced: number; totalHealing: number };
+
 // ----- 联合类型 -----
 
 export type ExpeditionDomainEvent =
@@ -612,4 +670,32 @@ export type ExpeditionDomainEvent =
   | BaseDomainEvent<'PROVISION_ADDED', ProvisionAddedPayload>
   | BaseDomainEvent<'PROVISION_REMOVED', ProvisionRemovedPayload>
   | BaseDomainEvent<'PROVISION_SETTLED', ProvisionSettledPayload>
-  | BaseDomainEvent<'EXPEDITION_STARTED_FROM_HAMLET', ExpeditionStartedFromHamletPayload>;
+  | BaseDomainEvent<'EXPEDITION_STARTED_FROM_HAMLET', ExpeditionStartedFromHamletPayload>
+  // Phase 4
+  | BaseDomainEvent<'QUIRK_GAINED', QuirkGainedPayload>
+  | BaseDomainEvent<'QUIRK_REPLACED', QuirkReplacedPayload>
+  | BaseDomainEvent<'QUIRK_LOCKED', QuirkLockedPayload>
+  | BaseDomainEvent<'QUIRK_REMOVED', QuirkRemovedPayload>
+  | BaseDomainEvent<'QUIRK_BEHAVIOR_TRIGGERED', QuirkBehaviorTriggeredPayload>
+  | BaseDomainEvent<'DISEASE_GAINED', DiseaseGainedPayload>
+  | BaseDomainEvent<'DISEASE_TREATED', DiseaseTreatedPayload>
+  | BaseDomainEvent<'TRINKET_LOOTED', TrinketLootedPayload>
+  | BaseDomainEvent<'TRINKET_EQUIPPED', TrinketEquippedPayload>
+  | BaseDomainEvent<'TRINKET_UNEQUIPPED', TrinketUnequippedPayload>
+  | BaseDomainEvent<'TRINKET_LOST', TrinketLostPayload>
+  | BaseDomainEvent<'TRINKET_RECOVERED', TrinketRecoveredPayload>
+  | BaseDomainEvent<'HERO_RESOLVE_LEVEL_INCREASED', HeroResolveLevelIncreasedPayload>
+  | BaseDomainEvent<'HERO_SKILL_LEVEL_INCREASED', HeroSkillLevelIncreasedPayload>
+  | BaseDomainEvent<'HERO_WEAPON_LEVEL_INCREASED', HeroWeaponLevelIncreasedPayload>
+  | BaseDomainEvent<'HERO_ARMOR_LEVEL_INCREASED', HeroArmorLevelIncreasedPayload>
+  | BaseDomainEvent<'CAMP_STARTED', CampStartedPayload>
+  | BaseDomainEvent<'CAMP_FOOD_CONSUMED', CampFoodConsumedPayload>
+  | BaseDomainEvent<'CAMP_ACTIVITY_SELECTED', CampActivitySelectedPayload>
+  | BaseDomainEvent<'CAMP_POINTS_SPENT', CampPointsSpentPayload>
+  | BaseDomainEvent<'CAMP_BUFF_APPLIED', CampBuffAppliedPayload>
+  | BaseDomainEvent<'CAMP_STRESS_REDUCED', CampStressReducedPayload>
+  | BaseDomainEvent<'CAMP_HEALING_APPLIED', CampHealingAppliedPayload>
+  | BaseDomainEvent<'NIGHT_AMBUSH_CHECK_STARTED', NightAmbushCheckStartedPayload>
+  | BaseDomainEvent<'NIGHT_AMBUSH_PREVENTED', NightAmbushPreventedPayload>
+  | BaseDomainEvent<'NIGHT_AMBUSH_TRIGGERED', NightAmbushTriggeredPayload>
+  | BaseDomainEvent<'CAMP_COMPLETED', CampCompletedPayload>;

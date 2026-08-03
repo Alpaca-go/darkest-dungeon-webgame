@@ -30,7 +30,7 @@ export interface ServiceAssignmentResult {
   weeksRequired?: number;
   /** 实际效果(下周结算时计算) */
   effect?: {
-    type: 'stress-relief' | 'quirk-removal' | 'disease-treatment' | 'skill-upgrade' | 'weapon-upgrade' | 'armor-upgrade';
+    type: 'stress-relief' | 'quirk-removal' | 'disease-treatment' | 'lock-positive-quirk' | 'skill-upgrade' | 'weapon-upgrade' | 'armor-upgrade';
     min?: number;
     max?: number;
     /** 治疗对负向怪癖 / 疾病 */
@@ -158,6 +158,25 @@ function getServiceCostAndEffect(
       effect: { type: 'disease-treatment', targetId: hero.diseaseIds[0]! },
     };
   }
+  // 疗养院:锁定 1 正面怪癖
+  if (facilityId === 'sanitarium' && serviceId === 'lock-positive-quirk') {
+    if (!hero.positiveQuirkIds || hero.positiveQuirkIds.length === 0) {
+      return { ok: false, reason: '没有正面怪癖' };
+    }
+    // 找一个未锁定的
+    const unlockable = hero.positiveQuirkIds.find(
+      (q) => !(hero.lockedPositiveQuirkIds ?? []).includes(q),
+    );
+    if (!unlockable) {
+      return { ok: false, reason: '所有正面怪癖都已锁定' };
+    }
+    return {
+      ok: true,
+      costGold: 400,
+      weeksRequired: 1,
+      effect: { type: 'lock-positive-quirk', targetId: unlockable },
+    };
+  }
   // 公会:升级技能
   if (facilityId === 'guild' && serviceId === 'skill-upgrade') {
     if (campaign.facilityStates['guild']!.level < 1) {
@@ -252,6 +271,16 @@ function applyServiceEffect(state: GameState, slot: { heroId: string; serviceId:
       if (hero.diseaseIds && hero.diseaseIds.length > 0) {
         hero.diseaseIds.shift();
       }
+      return;
+    }
+    case 'lock-positive-quirk': {
+      if (!hero.lockedPositiveQuirkIds) hero.lockedPositiveQuirkIds = [];
+      if (!hero.positiveQuirkIds) return;
+      // 锁定第一个未锁定的正面怪癖
+      const toLock = hero.positiveQuirkIds.find(
+        (q) => !hero.lockedPositiveQuirkIds!.includes(q),
+      );
+      if (toLock) hero.lockedPositiveQuirkIds.push(toLock);
       return;
     }
     case 'skill-upgrade': {
