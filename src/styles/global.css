@@ -1,0 +1,105 @@
+/* Phase 0 全局样式 — 极简哥特风,够 demo 用即可 */
+
+:root {
+  --bg-deep: #0a0908;
+  --bg-card: #1a1612;
+  --bg-card-hover: #221d18;
+  --text-primary: #d8c9a8;
+  --text-muted: #8a7e69;
+  --accent: #b03a2e;
+  --accent-bright: #e74c3c;
+  --border: #3a322a;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: 'Georgia', 'STKaiti', 'KaiTi', serif;
+  min-height: 100vh;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-root {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.app-header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+}
+
+.app-header h1 {
+  font-size: 32px;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 14px;
+  font-style: italic;
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 20px 24px;
+  border-radius: 4px;
+}
+
+.card h2 {
+  font-size: 18px;
+  margin-bottom: 12px;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+}
+
+.card p {
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.card li {
+  padding: 4px 0;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+code {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+  color: var(--accent-bright);
+}
+
+strong {
+  color: var(--accent-bright);
+}
