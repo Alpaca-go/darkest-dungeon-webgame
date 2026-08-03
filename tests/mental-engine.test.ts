@@ -105,6 +105,8 @@ function makeState(seed: string): GameState {
     eventLog: [],
     rng: rng.state,
     lastTransactionId: null,
+    campaign: null,
+    hamlet: null,
     activeOverlay: null,
     deathRecords: [],
     pendingMentalFlags: [],

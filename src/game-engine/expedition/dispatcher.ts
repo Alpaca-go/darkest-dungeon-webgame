@@ -41,6 +41,15 @@ import {
 } from '../mental/index.js';
 import { checkAfflictionBehaviors, checkVirtueBehaviors } from '../mental/behaviors.js';
 import type { AfflictionTrigger } from './types.js';
+import {
+  INITIAL_GOLD,
+  INITIAL_PORTRAITS,
+  INITIAL_CRESTS,
+  INITIAL_ROSTER_CAPACITY,
+  INITIAL_FACILITY_STATES,
+  type CampaignState,
+  type HamletState,
+} from '../campaign/types.js';
 
 export class CommandError extends Error {
   constructor(message: string) {
@@ -202,6 +211,23 @@ function cmdStartExpedition(ctx: ExpeditionContext, _loadoutId: string, _command
       deathblowPenalty: 0,
       heartAttackCount: 0,
       behaviorCooldowns: {},
+      // Phase 3 长期经营字段(SPEC §6.1)
+      resolveLevel: 0,
+      xp: 0,
+      weaponLevel: 0,
+      armorLevel: 0,
+      skillLevels: Object.fromEntries(p.skills.map((s) => [s.skillId, 0])),
+      positiveQuirkIds: [],
+      negativeQuirkIds: [],
+      diseaseIds: [],
+      activityState: 'available',
+      assignedFacilityId: null,
+      activityWeeksRemaining: 0,
+      expeditionCount: 0,
+      successfulExpeditionCount: 0,
+      retreatCount: 0,
+      deathsDoorCount: 0,
+      resistedDeathblowCount: 0,
     };
   }
 
@@ -255,6 +281,36 @@ function cmdStartExpedition(ctx: ExpeditionContext, _loadoutId: string, _command
   ctx.state.encounter = null;
   ctx.state.pendingDecision = null;
   ctx.state.lastResolution = null;
+
+  // Phase 3:初始化战役 + 庄园(SPEC §29)
+  if (!ctx.state.campaign) {
+    const campaign: CampaignState = {
+      id: `camp_${Date.now().toString(36)}`,
+      seed: ctx.state.seed,
+      week: 1,
+      gold: INITIAL_GOLD,
+      heirlooms: { portraits: INITIAL_PORTRAITS, crests: INITIAL_CRESTS },
+      rosterCapacity: INITIAL_ROSTER_CAPACITY,
+      rosterHeroIds: Object.keys(party),
+      deadHeroIds: [],
+      completedQuestIds: [],
+      availableQuestIds: [],
+      availableRecruitIds: [],
+      facilityStates: structuredClone(INITIAL_FACILITY_STATES),
+      status: 'active',
+    };
+    const hamlet: HamletState = {
+      mode: 'weekly-summary',
+      recruitCandidates: [],
+      weeklyQuestIds: [],
+      selectedQuestId: null,
+      selectedPartyHeroIds: [],
+      provisionCart: {},
+      weeklyNotices: [],
+    };
+    ctx.state.campaign = campaign;
+    ctx.state.hamlet = hamlet;
+  }
 
   ctx.emit('EXPEDITION_STARTED', {
     expeditionId: expState.id,

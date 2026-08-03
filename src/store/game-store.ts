@@ -76,6 +76,9 @@ function emptyGameState(seed: string): GameState {
     deathRecords: [],
     pendingMentalFlags: [],
     derivedEventDepth: 0,
+    // Phase 3
+    campaign: null,
+    hamlet: null,
   };
 }
 

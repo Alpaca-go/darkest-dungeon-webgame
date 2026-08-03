@@ -86,6 +86,8 @@ function freshGame(seed = SEED): GameState {
     eventLog: [],
     rng: new Mulberry32(seed).state,
     lastTransactionId: null,
+    campaign: null,
+    hamlet: null,
     // Phase 2
     activeOverlay: null,
     deathRecords: [],

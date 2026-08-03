@@ -34,7 +34,19 @@ export type GameViewMode =
   | 'expedition-success'    // 任务完成
   | 'expedition-retreat'    // 主动撤退
   | 'expedition-failure'    // 失败
-  | 'game-error';           // 系统错误(规则不变量被破坏)
+  | 'game-error'            // 系统错误(规则不变量被破坏)
+  // Phase 3 庄园(SPEC §5.1 §23)
+  | 'hamlet-overview'       // 本周概况
+  | 'hamlet-roster'         // 英雄名册
+  | 'hamlet-treatment'      // 治疗(酒馆/修道院/疗养院)
+  | 'hamlet-recruit'        // 马车招募
+  | 'hamlet-upgrades'       // 公会/铁匠铺升级
+  | 'hamlet-graveyard'      // 墓园
+  | 'hamlet-quest'          // 选择任务
+  | 'hamlet-party'          // 组队
+  | 'hamlet-provision'      // 购买补给
+  | 'hamlet-summary'        // 远征返回结算(周总结)
+  | 'hamlet-debrief';       // 远征后回到庄园(显示死亡/精神/资源)
 
 // =====================================================================
 // 路线与节点 (SPEC §7)
@@ -269,6 +281,39 @@ export interface HeroInstance {
   heartAttackCount: number;
   /** 折磨/美德行为冷却(behaviorId -> 剩余触发次数) */
   behaviorCooldowns: Record<string, number>;
+  // ========== Phase 3 长期经营(SPEC §6.1) ==========
+  /** 意志等级 0-2(远征结算提升) */
+  resolveLevel?: number;
+  /** 经验 */
+  xp?: number;
+  /** 武器等级 0-2 */
+  weaponLevel?: number;
+  /** 护甲等级 0-2 */
+  armorLevel?: number;
+  /** 技能等级映射(skillId -> level 0-2) */
+  skillLevels?: Record<string, number>;
+  /** 正面怪癖 id 列表(Phase 4 接入) */
+  positiveQuirkIds?: string[];
+  /** 负面怪癖 id 列表 */
+  negativeQuirkIds?: string[];
+  /** 疾病 id 列表(Phase 4 接入) */
+  diseaseIds?: string[];
+  /** 当前活动状态 */
+  activityState?: 'available' | 'selected-for-party' | 'stress-treatment' | 'medical-treatment' | 'training' | 'missing' | 'dead';
+  /** 正在使用哪个设施 */
+  assignedFacilityId?: string | null;
+  /** 活动剩余周数(0 表示无活动) */
+  activityWeeksRemaining?: number;
+  /** 远征次数 */
+  expeditionCount?: number;
+  /** 成功远征次数 */
+  successfulExpeditionCount?: number;
+  /** 撤退次数 */
+  retreatCount?: number;
+  /** 死亡之门次数 */
+  deathsDoorCount?: number;
+  /** 致死打击抵抗次数 */
+  resistedDeathblowCount?: number;
 }
 
 // =====================================================================
@@ -658,7 +703,7 @@ export interface ExpeditionState {
 // 顶层 GameState (SPEC §27)
 // =====================================================================
 
-export const GAME_STATE_VERSION = 2;
+export const GAME_STATE_VERSION = 3;
 
 export interface GameState {
   version: typeof GAME_STATE_VERSION;
@@ -672,6 +717,11 @@ export interface GameState {
   pendingDecision: PendingDecision | null;
   /** 上一次结算反馈(显示在 ResolutionPanel) */
   lastResolution: ResolutionResult | null;
+  // ========== Phase 3 长期经营(SPEC §23) ==========
+  /** 战役状态(跨周持久化;Phase 1/2 时为 null) */
+  campaign: import('../campaign/types.js').CampaignState | null;
+  /** 庄园状态(只在 hamlet-* 模式时非空) */
+  hamlet: import('../campaign/types.js').HamletState | null;
   inventory: InventoryState;
   /** 火把(冗余字段,expedition.torch 是真实值,这里方便 selectors) */
   torch: TorchState;

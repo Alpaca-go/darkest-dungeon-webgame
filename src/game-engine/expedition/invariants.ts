@@ -26,8 +26,8 @@ export class InvariantViolation extends Error {
 }
 
 export function assertGameInvariants(state: GameState): void {
-  if (state.version !== 2) {
-    throw new InvariantViolation(`game state version ${state.version} != 2`);
+  if (state.version !== 3) {
+    throw new InvariantViolation(`game state version ${state.version} != 3`);
   }
 
   const validModes = new Set([
@@ -42,6 +42,17 @@ export function assertGameInvariants(state: GameState): void {
     'expedition-retreat',
     'expedition-failure',
     'game-error',
+    'hamlet-overview',
+    'hamlet-roster',
+    'hamlet-treatment',
+    'hamlet-recruit',
+    'hamlet-upgrades',
+    'hamlet-graveyard',
+    'hamlet-quest',
+    'hamlet-party',
+    'hamlet-provision',
+    'hamlet-summary',
+    'hamlet-debrief',
   ]);
   if (!validModes.has(state.mode)) {
     throw new InvariantViolation(`invalid mode ${state.mode}`);
