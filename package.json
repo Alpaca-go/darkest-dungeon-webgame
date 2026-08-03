@@ -10,7 +10,10 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "vitest run tests/e2e",
     "simulate": "tsx scripts/simulate-battles.ts",
+    "simulate:expedition": "tsx scripts/simulate-expeditions.ts",
+    "lint": "eslint src tests --ext .ts,.tsx",
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
@@ -22,7 +25,12 @@
     "@types/node": "^22.5.5",
     "@types/react": "^18.3.10",
     "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/parser": "^8.65.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "eslint": "^8.57.1",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "tsx": "^4.19.1",
     "typescript": "^5.6.2",
     "vite": "^5.4.8",

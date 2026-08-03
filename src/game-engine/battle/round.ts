@@ -135,7 +135,7 @@ export function beginTurn(
   let updated = findActorInLists(state, actorId)!;
   updated = { ...updated, cooldowns: newCooldowns };
 
-  // 累计 DOT 伤害
+  // 累计 DOT 伤害(保留供调试/将来使用)
   let totalDotDamage = 0;
   const newBleed: typeof updated.bleed = [];
   for (const dot of updated.bleed) {
@@ -184,6 +184,7 @@ export function beginTurn(
     }
   }
   updated = { ...updated, bleed: newBleed, blight: newBlight };
+  void totalDotDamage; // 保留供调试 / 未来扩展
 
   // 5. 死亡检测(由 DOT 引起)
   if (updated.hp <= 0 && !updated.isDead) {

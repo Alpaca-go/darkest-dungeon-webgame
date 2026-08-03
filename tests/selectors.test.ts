@@ -93,7 +93,7 @@ describe('ViewModel — 技能按钮', () => {
 
   it('smite 在 rank 3 不可用(usableFromRanks 1-2)', () => {
     const state = battleWithActorReady('skill-btn-2');
-    const crusader = findActorInLists(state, 'hero.crusader')!;
+    const _crusader = findActorInLists(state, 'hero.crusader')!;
     // 强制把 crusader 挪到 rank 3
     const idx = state.heroes.findIndex((h) => h.id === 'hero.crusader');
     state.heroes[idx] = { ...state.heroes[idx]!, rank: 3 };

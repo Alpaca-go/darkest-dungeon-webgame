@@ -705,7 +705,7 @@ export function buildBattleScreenViewModel(input: BuildViewModelInput): BattleSc
   const isVictoryOrDefeat = state.phase === 'victory' || state.phase === 'defeat';
 
   // 技能按钮
-  let skills: SkillButtonViewModel[] = [];
+  const skills: SkillButtonViewModel[] = [];
   if (activeActor && !isVictoryOrDefeat) {
     const loadout = state.loadouts[activeActor.id] ?? [];
     const skillReg = state.skillRegistry;
@@ -717,7 +717,7 @@ export function buildBattleScreenViewModel(input: BuildViewModelInput): BattleSc
   }
 
   // 合法目标
-  let validTargetIds: string[] = [];
+  const validTargetIds: string[] = [];
   const invalidTargetReasons: Record<string, string> = {};
   if (activeActor && selectedSkillId && isPlayerTurn) {
     const skill = state.skillRegistry[selectedSkillId];

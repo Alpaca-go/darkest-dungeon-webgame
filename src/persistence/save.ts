@@ -1,25 +1,31 @@
 /**
- * 存档(localStorage)
+ * 存档(Phase 1 v2.0)
  *
  * 持久化:
- * - 当前战斗快照(BattleState)
+ * - 完整 GameState(v2)
  * - 当前 Seed
  * - UI 设置
  *
  * 刷新后必须恢复:
- * - 当前回合 / 行动者 / 单位 HP / 站位 / 状态 / RNG / 战斗日志 / 胜负
+ * - 当前节点 / 当前选择
+ * - 火把 / 食物 / 背包
+ * - 英雄状态与站位
+ * - 遭遇轮次 / 触发决策
+ * - RNG 状态
+ * - 事件日志
  *
  * 不会保存 UI 状态(由 UI Store 重新初始化)
  */
 
-import type { BattleState } from '../game-engine/types.js';
+import type { GameState } from '../game-engine/expedition/types.js';
+import { GAME_STATE_VERSION } from '../game-engine/expedition/types.js';
 
-const STORAGE_KEY = 'dd-web-battle-save-v1';
-const SETTINGS_KEY = 'dd-web-settings-v1';
+const STORAGE_KEY = 'dd-web-expedition-save-v2';
+const SETTINGS_KEY = 'dd-web-settings-v2';
 
 export interface SaveData {
-  version: 1;
-  battle: BattleState;
+  version: 2;
+  state: GameState;
   savedAt: string;
 }
 
@@ -29,35 +35,36 @@ export interface PersistedSettings {
   debugOpen: boolean;
 }
 
-export function saveBattle(battle: BattleState): void {
+export function saveGame(state: GameState): void {
   if (typeof localStorage === 'undefined') return;
   try {
     const data: SaveData = {
-      version: 1,
-      battle,
+      version: 2,
+      state,
       savedAt: new Date().toISOString(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (e) {
-    console.warn('[save] failed to save battle', e);
+    console.warn('[save] failed to save game', e);
   }
 }
 
-export function loadBattle(): SaveData | null {
+export function loadGame(): SaveData | null {
   if (typeof localStorage === 'undefined') return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw) as SaveData;
-    if (data.version !== 1) return null;
+    if (data.version !== 2) return null;
+    if (data.state.version !== GAME_STATE_VERSION) return null;
     return data;
   } catch (e) {
-    console.warn('[save] failed to load battle', e);
+    console.warn('[save] failed to load game', e);
     return null;
   }
 }
 
-export function clearBattle(): void {
+export function clearGame(): void {
   if (typeof localStorage === 'undefined') return;
   try {
     localStorage.removeItem(STORAGE_KEY);
@@ -86,21 +93,16 @@ export function loadSettings(): PersistedSettings | null {
   }
 }
 
-/** 导出调试包(开发文档 §20.3) */
-export function exportDebugPackage(
-  battle: BattleState,
-  seed: string,
-  error?: Error,
-): string {
+export function exportDebugPackage(state: GameState, error?: Error): string {
   return JSON.stringify(
     {
-      gameVersion: '0.1.0-phase1',
-      contentVersion: 'phase1',
-      seed,
-      state: battle,
+      gameVersion: '0.2.0-phase1-v2',
+      contentVersion: 'phase1-v2',
+      seed: state.seed,
+      state,
       commands: [],
-      events: battle.log,
-      rng: battle.rng,
+      events: state.eventLog,
+      rng: state.rng,
       error: error
         ? { message: error.message, stack: error.stack }
         : undefined,
