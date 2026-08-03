@@ -61,6 +61,10 @@ export interface CampaignState {
   facilityStates: Record<string, FacilityState>;
   /** Phase 4:饰品仓库(SPEC §7.5) */
   trinketInventory?: import('../trinkets/types.js').TrinketInventoryState;
+  /** Phase 5:区域进度(按 regionId) */
+  regionProgress?: Record<string, import('../regions/types.js').RegionProgress>;
+  /** Phase 5:区域发现(按 regionId) */
+  regionDiscovery?: Record<string, import('../regions/types.js').RegionDiscoveryState>;
   status: CampaignStatus;
 }
 
@@ -95,6 +99,8 @@ export interface HamletState {
   provisionCart: Record<string, number>;
   /** 本周提示(3-5 条,按优先级排序) */
   weeklyNotices: WeeklyNotice[];
+  /** Phase 5:选中的区域 id */
+  selectedRegionId?: string | null;
 }
 
 // =====================================================================
@@ -188,6 +194,12 @@ export interface QuestDefinition {
   failPenalty?: { goldLost: number; };
   /** 事件倾向(可选) */
   specialEventTendency?: 'curse' | 'traps' | 'starvation' | 'mysteries';
+  /** Phase 5:所属区域(可选) */
+  regionId?: string;
+  /** Phase 5:任务目标类型(可选) */
+  objectiveType?: 'clear' | 'investigate' | 'collect' | 'deep' | 'purge' | 'escort-item';
+  /** Phase 5:任务修正词 */
+  modifierIds?: string[];
 }
 
 // =====================================================================

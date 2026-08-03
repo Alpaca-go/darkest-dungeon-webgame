@@ -114,7 +114,18 @@ export type GameCommand =
   | { type: 'DEBUG_FORCE_CAMP'; nodeId?: string; commandId: string }
   | { type: 'DEBUG_SET_CAMP_POINTS'; value: number; commandId: string }
   | { type: 'DEBUG_FORCE_NIGHT_AMBUSH'; prevent: boolean; commandId: string }
-  | { type: 'DEBUG_ADD_EXPEDITION_BUFF'; tag: string; magnitude: number; remainingNodes: number; commandId: string };
+  | { type: 'DEBUG_ADD_EXPEDITION_BUFF'; tag: string; magnitude: number; remainingNodes: number; commandId: string }
+  // Phase 5 区域系统
+  | { type: 'SELECT_REGION'; regionId: import('../regions/types.js').RegionId; commandId: string }
+  | { type: 'GENERATE_REGION_QUEST'; regionId: import('../regions/types.js').RegionId; questLength: 'short' | 'medium'; commandId: string }
+  | { type: 'GRANT_REGION_EXPERIENCE'; regionId: import('../regions/types.js').RegionId; amount: number; commandId: string }
+  | { type: 'DISCOVER_REGION_CONTENT'; regionId: import('../regions/types.js').RegionId; contentType: 'enemy' | 'curio' | 'trap' | 'disease' | 'trinket'; contentId: string; commandId: string }
+  | { type: 'MARK_BOSS_QUEST_READY'; regionId: import('../regions/types.js').RegionId; commandId: string }
+  // Phase 5 调试
+  | { type: 'DEBUG_SET_REGION_LEVEL'; regionId: import('../regions/types.js').RegionId; level: number; commandId: string }
+  | { type: 'DEBUG_FORCE_REGION_QUEST'; regionId: import('../regions/types.js').RegionId; commandId: string }
+  | { type: 'DEBUG_FORCE_ELITE_NODE'; commandId: string }
+  | { type: 'DEBUG_EXPORT_REGION_PACKAGE'; commandId: string };
 
 export type CommandType = GameCommand['type'];
 

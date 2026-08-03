@@ -276,6 +276,24 @@ function applyCommand(ctx: ExpeditionContext, command: GameCommand): void {
       return cmdDebugForceNightAmbush(ctx, command.prevent, command.commandId);
     case 'DEBUG_ADD_EXPEDITION_BUFF':
       return cmdDebugAddExpeditionBuff(ctx, command.tag, command.magnitude, command.remainingNodes, command.commandId);
+    case 'SELECT_REGION':
+      return cmdSelectRegion(ctx, command.regionId, command.commandId);
+    case 'GENERATE_REGION_QUEST':
+      return cmdGenerateRegionQuest(ctx, command.regionId, command.questLength, command.commandId);
+    case 'GRANT_REGION_EXPERIENCE':
+      return cmdGrantRegionExperience(ctx, command.regionId, command.amount, command.commandId);
+    case 'DISCOVER_REGION_CONTENT':
+      return cmdDiscoverRegionContent(ctx, command.regionId, command.contentType, command.contentId, command.commandId);
+    case 'MARK_BOSS_QUEST_READY':
+      return cmdMarkBossQuestReady(ctx, command.regionId, command.commandId);
+    case 'DEBUG_SET_REGION_LEVEL':
+      return cmdDebugSetRegionLevel(ctx, command.regionId, command.level, command.commandId);
+    case 'DEBUG_FORCE_REGION_QUEST':
+      return cmdDebugForceRegionQuest(ctx, command.regionId, command.commandId);
+    case 'DEBUG_FORCE_ELITE_NODE':
+      return; // 简化:无操作
+    case 'DEBUG_EXPORT_REGION_PACKAGE':
+      return; // 简化:无操作
   }
 }
 
@@ -1607,4 +1625,189 @@ function cmdDebugAddExpeditionBuff(
   if (!exp.expeditionBuffs) exp.expeditionBuffs = [];
   exp.expeditionBuffs.push(buff);
   ctx.emit('CAMP_BUFF_APPLIED', { buffId: buff.id, sourceId: 'debug' });
+}
+
+// =============== Phase 5 区域命令 ===============
+
+import {
+  emptyRegionProgress,
+  emptyRegionDiscovery,
+  grantRegionExperience,
+  markDiscovered,
+  generateRegionQuest,
+} from '../regions/manager.js';
+import { getAllRegionIds } from '../regions/registry.js';
+import type { RegionId, RegionDiscoveryState, GeneratedQuest } from '../regions/types.js';
+
+function ensureRegionProgress(campaign: any, regionId: RegionId): any {
+  if (!campaign.regionProgress) campaign.regionProgress = {};
+  if (!campaign.regionProgress[regionId]) {
+    campaign.regionProgress[regionId] = emptyRegionProgress(regionId);
+  }
+  return campaign.regionProgress[regionId];
+}
+
+function ensureRegionDiscovery(campaign: any, regionId: RegionId): RegionDiscoveryState {
+  if (!campaign.regionDiscovery) campaign.regionDiscovery = {};
+  if (!campaign.regionDiscovery[regionId]) {
+    campaign.regionDiscovery[regionId] = emptyRegionDiscovery();
+  }
+  return campaign.regionDiscovery[regionId];
+}
+
+function ensureHamlet(state: any): any {
+  if (!state.hamlet) {
+    state.hamlet = {
+      mode: 'weekly-summary',
+      recruitCandidates: [],
+      weeklyQuestIds: [],
+      weeklyQuestDefs: {},
+      selectedQuestId: null,
+      selectedPartyHeroIds: [],
+      provisionCart: {},
+      weeklyNotices: [],
+      selectedRegionId: null,
+    };
+  }
+  return state.hamlet;
+}
+
+function cmdSelectRegion(ctx: ExpeditionContext, regionId: RegionId, _commandId: string): void {
+  void _commandId;
+  if (!getAllRegionIds().includes(regionId)) {
+    throw new Error(`unknown region: ${regionId}`);
+  }
+  if (!ctx.state.campaign) {
+    throw new Error('no campaign');
+  }
+  ensureRegionProgress(ctx.state.campaign, regionId);
+  ensureRegionDiscovery(ctx.state.campaign, regionId);
+  const hamlet = ensureHamlet(ctx.state);
+  hamlet.selectedRegionId = regionId;
+  ctx.emit('REGION_SELECTED', { regionId });
+}
+
+function cmdGenerateRegionQuest(
+  ctx: ExpeditionContext,
+  regionId: RegionId,
+  questLength: 'short' | 'medium',
+  _commandId: string,
+): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const progress = ensureRegionProgress(ctx.state.campaign, regionId);
+  const result = generateRegionQuest({
+    regionId,
+    questLength,
+    difficulty: progress.level / 4,
+    partyLevel: 1,
+    seed: ctx.state.seed,
+    rngState: ctx.state.rng,
+  });
+  ctx.state.rng = result.newRngState;
+  // 加入 weeklyQuestDefs
+  const hamlet = ensureHamlet(ctx.state);
+  const q: GeneratedQuest = result.quest;
+  hamlet.weeklyQuestIds.push(q.id);
+  hamlet.weeklyQuestDefs[q.id] = {
+    id: q.id,
+    title: `${q.objectiveType === 'clear' ? '清理' : q.objectiveType === 'investigate' ? '调查' : q.objectiveType === 'collect' ? '收集' : q.objectiveType === 'deep' ? '深入' : q.objectiveType === 'purge' ? '净化' : '护送'}任务`,
+    description: `${regionId} ${questLength} 任务,目标 ${q.objectiveType}`,
+    difficulty: q.difficulty > 0.6 ? 'high-risk' : q.difficulty > 0.3 ? 'standard' : 'safe',
+    nodeCount: q.objectiveData.target,
+    threat: 'beast',
+    recommendedClassTags: q.recommendedHeroTags,
+    expectedProvisions: Object.fromEntries(q.recommendedProvisionIds.map((id) => [id, 1])),
+    rewards: {
+      gold: q.rewardPreview.gold,
+      portraits: q.rewardPreview.portraits,
+      crests: q.rewardPreview.crests,
+      heroXp: q.rewardPreview.heroXp,
+    },
+    regionId: q.regionId,
+    objectiveType: q.objectiveType,
+    modifierIds: q.modifierIds,
+  };
+  ctx.emit('REGION_ROUTE_GENERATED', { regionId, questId: q.id });
+}
+
+function cmdGrantRegionExperience(
+  ctx: ExpeditionContext,
+  regionId: RegionId,
+  amount: number,
+  _commandId: string,
+): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  if (amount <= 0) throw new Error('amount must be > 0');
+  const progress = ensureRegionProgress(ctx.state.campaign, regionId);
+  const result = grantRegionExperience(progress, amount);
+  if (result.leveledUp) {
+    ctx.emit('REGION_LEVEL_INCREASED', { regionId, newLevel: result.newLevel });
+    for (const eid of result.unlockedEliteIds) {
+      ctx.emit('REGION_ELITE_UNLOCKED', { regionId, enemyId: eid });
+    }
+    for (const rid of result.unlockedRareLootIds) {
+      ctx.emit('REGION_RARE_LOOT_UNLOCKED', { regionId, lootId: rid });
+    }
+  }
+  if (result.bossReady) {
+    ctx.emit('REGION_BOSS_QUEST_MARKED_READY', { regionId });
+  }
+  ctx.emit('REGION_EXPERIENCE_GRANTED', { regionId, amount, newExperience: progress.experience });
+}
+
+function cmdDiscoverRegionContent(
+  ctx: ExpeditionContext,
+  regionId: RegionId,
+  contentType: 'enemy' | 'curio' | 'trap' | 'disease' | 'trinket',
+  contentId: string,
+  _commandId: string,
+): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const discovery = ensureRegionDiscovery(ctx.state.campaign, regionId);
+  const result = markDiscovered(discovery, contentType, contentId);
+  if (result.newlyDiscovered.length > 0) {
+    const evType = (
+      contentType === 'enemy' ? 'REGION_ENEMY_DISCOVERED' :
+      contentType === 'curio' ? 'REGION_CURIO_DISCOVERED' :
+      contentType === 'trap' ? 'REGION_TRAP_DISCOVERED' :
+      contentType === 'disease' ? 'REGION_DISEASE_DISCOVERED' :
+      'REGION_TRINKET_DISCOVERED'
+    );
+    ctx.emit(evType, { regionId, contentId });
+  }
+}
+
+function cmdMarkBossQuestReady(ctx: ExpeditionContext, regionId: RegionId, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const progress = ensureRegionProgress(ctx.state.campaign, regionId);
+  progress.bossQuestReady = true;
+  ctx.emit('REGION_BOSS_QUEST_MARKED_READY', { regionId });
+}
+
+function cmdDebugSetRegionLevel(
+  ctx: ExpeditionContext,
+  regionId: RegionId,
+  level: number,
+  _commandId: string,
+): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  if (level < 0 || level > 4) throw new Error('level must be 0-4');
+  const progress = ensureRegionProgress(ctx.state.campaign, regionId);
+  progress.level = level;
+  progress.experience = level * 50;
+  progress.bossQuestReady = level >= 4;
+}
+
+function cmdDebugForceRegionQuest(
+  ctx: ExpeditionContext,
+  regionId: RegionId,
+  _commandId: string,
+): void {
+  void _commandId;
+  cmdGenerateRegionQuest(ctx, regionId, 'medium', _commandId);
 }

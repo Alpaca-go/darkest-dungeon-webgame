@@ -143,7 +143,25 @@ export type ExpeditionDomainEventType =
   | 'NIGHT_AMBUSH_CHECK_STARTED'
   | 'NIGHT_AMBUSH_PREVENTED'
   | 'NIGHT_AMBUSH_TRIGGERED'
-  | 'CAMP_COMPLETED';
+  | 'CAMP_COMPLETED'
+  // Phase 5 区域事件
+  | 'REGION_SELECTED'
+  | 'REGION_ROUTE_GENERATED'
+  | 'REGION_RULE_APPLIED'
+  | 'REGION_CONTENT_DISCOVERED'
+  | 'REGION_ENEMY_DISCOVERED'
+  | 'REGION_CURIO_DISCOVERED'
+  | 'REGION_TRAP_DISCOVERED'
+  | 'REGION_DISEASE_DISCOVERED'
+  | 'REGION_TRINKET_DISCOVERED'
+  | 'REGION_EXPERIENCE_GRANTED'
+  | 'REGION_LEVEL_INCREASED'
+  | 'REGION_CONTENT_UNLOCKED'
+  | 'REGION_ELITE_UNLOCKED'
+  | 'REGION_RARE_LOOT_UNLOCKED'
+  | 'REGION_BOSS_QUEST_MARKED_READY'
+  | 'QUEST_MODIFIER_APPLIED'
+  | 'REGION_REWARD_GRANTED';
 
 export interface BaseDomainEvent<T extends ExpeditionDomainEventType, P> {
   id: string;
@@ -698,4 +716,22 @@ export type ExpeditionDomainEvent =
   | BaseDomainEvent<'NIGHT_AMBUSH_CHECK_STARTED', NightAmbushCheckStartedPayload>
   | BaseDomainEvent<'NIGHT_AMBUSH_PREVENTED', NightAmbushPreventedPayload>
   | BaseDomainEvent<'NIGHT_AMBUSH_TRIGGERED', NightAmbushTriggeredPayload>
-  | BaseDomainEvent<'CAMP_COMPLETED', CampCompletedPayload>;
+  | BaseDomainEvent<'CAMP_COMPLETED', CampCompletedPayload>
+  // Phase 5
+  | BaseDomainEvent<'REGION_SELECTED', { regionId: string }>
+  | BaseDomainEvent<'REGION_ROUTE_GENERATED', { regionId: string; questId: string }>
+  | BaseDomainEvent<'REGION_RULE_APPLIED', { regionId: string; rule: string }>
+  | BaseDomainEvent<'REGION_CONTENT_DISCOVERED', { regionId: string; contentType: string; contentId: string }>
+  | BaseDomainEvent<'REGION_ENEMY_DISCOVERED', { regionId: string; contentId: string }>
+  | BaseDomainEvent<'REGION_CURIO_DISCOVERED', { regionId: string; contentId: string }>
+  | BaseDomainEvent<'REGION_TRAP_DISCOVERED', { regionId: string; contentId: string }>
+  | BaseDomainEvent<'REGION_DISEASE_DISCOVERED', { regionId: string; contentId: string }>
+  | BaseDomainEvent<'REGION_TRINKET_DISCOVERED', { regionId: string; contentId: string }>
+  | BaseDomainEvent<'REGION_EXPERIENCE_GRANTED', { regionId: string; amount: number; newExperience: number }>
+  | BaseDomainEvent<'REGION_LEVEL_INCREASED', { regionId: string; newLevel: number }>
+  | BaseDomainEvent<'REGION_CONTENT_UNLOCKED', { regionId: string; contentId: string }>
+  | BaseDomainEvent<'REGION_ELITE_UNLOCKED', { regionId: string; enemyId: string }>
+  | BaseDomainEvent<'REGION_RARE_LOOT_UNLOCKED', { regionId: string; lootId: string }>
+  | BaseDomainEvent<'REGION_BOSS_QUEST_MARKED_READY', { regionId: string }>
+  | BaseDomainEvent<'QUEST_MODIFIER_APPLIED', { regionId: string; modifierIds: string[] }>
+  | BaseDomainEvent<'REGION_REWARD_GRANTED', { regionId: string; gold: number; trinketDefId?: string }>;
