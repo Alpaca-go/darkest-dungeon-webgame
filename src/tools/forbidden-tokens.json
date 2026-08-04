@@ -1,0 +1,35 @@
+{
+  "_comment": "Phase 8F: 原作专属词(英文 / 中文),用于 Originality Manifest 检测。从 JSON 加载避免 src/** 扫描触发原作词检测。SPEC §22 全部涵盖。",
+  "heroNames": [
+    "Reynauld",
+    "Dismas",
+    "Junia",
+    "Baudelaire",
+    "Paracelsus"
+  ],
+  "heroClasses": [
+    "Crusader",
+    "Highwayman",
+    "Vestal",
+    "PlagueDoctor"
+  ],
+  "bossNames": [
+    "Swine Prince",
+    "Necromancer",
+    "Hag",
+    "Crocodilian",
+    "Siren",
+    "Drowned Crew"
+  ],
+  "regions": [
+    "Darkest Dungeon",
+    "Weald",
+    "Warrens",
+    "Cove",
+    "Ruins"
+  ],
+  "uiTerms": [
+    "Heart Attack",
+    "stress heal"
+  ]
+}
