@@ -236,9 +236,10 @@ describe('Phase 6A: Boss 特殊任务物品(SPEC §14)', () => {
 describe('Phase 6A: 跨 bucket 一致性', () => {
   it('所有情报 bossId 与所属 Boss 一致', () => {
     for (const intel of Object.values(BOSS_INTELLIGENCE)) {
-      const boss = BOSS_DEFINITIONS[TEST_BOSS_ID];
+      const boss = BOSS_DEFINITIONS[intel.bossId];
+      expect(boss).toBeDefined();
       expect(boss.intelligenceEntryIds).toContain(intel.id);
-      expect(intel.bossId).toBe(TEST_BOSS_ID);
+      expect(intel.bossId).toBe(boss.id);
     }
   });
 

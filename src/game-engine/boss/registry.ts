@@ -74,6 +74,41 @@ export const BOSS_TASKS: Record<string, BossTaskMeta> = {
     description: '进入审判厅,经历 8-12 个节点的 Boss 专属路线,在最后准备节点确认队伍状态,再进入三阶段选择式 Boss 遭遇。',
     grantsIds: [],
   },
+  // ============================================================
+  // 6C:孢疫母巢(spore-matriarch)— corrupted-woods
+  // ============================================================
+  'task-spore-investigate-1': {
+    id: 'task-spore-investigate-1',
+    bossId: 'boss-spore-matriarch',
+    type: 'investigation',
+    name: '调查腐败林地菌床',
+    description: '深入林地深处,顺着孢子气味的浓重方向找到被菌丝覆盖的古代祭坛;在腐烂的树皮上刻下"母巢"二字,确认孢疫母巢确实在地下菌床中沉睡。',
+    grantsIds: ['intel-spore-attack-1', 'intel-spore-status-1', 'intel-spore-phase-1'],
+  },
+  'task-spore-weaken-1': {
+    id: 'task-spore-weaken-1',
+    bossId: 'boss-spore-matriarch',
+    type: 'weakening',
+    name: '净化外层菌床',
+    description: '在林地浅层找到母巢外延的三块腐殖菌床,用火油逐块焚烧,断绝母巢向外扩张孢子的养分。菌床烧尽后,母巢第二阶段的孢子召唤会大幅减半。',
+    grantsIds: ['weaken-spore-mycelium'],
+  },
+  'task-spore-weaken-2': {
+    id: 'task-spore-weaken-2',
+    bossId: 'boss-spore-matriarch',
+    type: 'weakening',
+    name: '取得抗孢子药剂',
+    description: '在林地药剂师的高塔中找到一瓶由 7 种抗病草药调制的银瓶,瓶口封蜡上刻有"母巢之日"的日期;携带它进入 Boss 战可获得 3 轮完全免疫孢子疾病攻击。',
+    grantsIds: ['weaken-spore-immunity'],
+  },
+  'task-spore-final-1': {
+    id: 'task-spore-final-1',
+    bossId: 'boss-spore-matriarch',
+    type: 'final',
+    name: '孢疫母巢讨伐',
+    description: '沿菌丝小径下到地下母巢,在"母巢之心"前最后确认队伍抗病与压力状态,再进入三阶段孢子感染式 Boss 遭遇。',
+    grantsIds: [],
+  },
 };
 
 // =====================================================================
@@ -90,6 +125,23 @@ const TEST_BOSS_RETREAT: BossRetreatRules = {
   stressPenalty: 8,
   threatIncrease: 15,
   weakeningEffectLossRules: ['weaken-stress-curse'], // 撤退时诅咒削弱失效
+};
+
+/**
+ * 6C 孢疫母巢撤退规则(per dev §20.2)
+ * 基础 60% 比审判者低(疾病压更不容易撤);
+ * 阶段 1 召唤感染体,阶段 2 母巢暴走更难撤。
+ */
+const SPORE_BOSS_RETREAT: BossRetreatRules = {
+  baseSuccessRate: 0.60,
+  phaseModifiers: {
+    0: 0,
+    1: -0.20,
+    2: -0.40,
+  },
+  stressPenalty: 5,
+  threatIncrease: 18, // 孢子扩散 → 威胁涨得更多
+  weakeningEffectLossRules: ['weaken-spore-immunity'], // 撤退后抗孢子药剂失效
 };
 
 // =====================================================================
@@ -178,6 +230,95 @@ export const BOSS_ENVIRONMENT_TARGETS: Record<string, BossEnvironmentTargetDefin
           { kind: 'inc-flag', flagName: 'env_shield_pierced', amount: 1 },
         ],
         riskTags: ['consume-boss-item'],
+      },
+    ],
+  },
+  // ============================================================
+  // 6C 孢疫母巢环境目标
+  // ============================================================
+  'env-spore-mycelium-bed': {
+    id: 'env-spore-mycelium-bed',
+    bossId: 'boss-spore-matriarch',
+    name: '外层菌床',
+    description: '母巢向外延伸的腐殖菌床,白色菌丝深入地下 3 米,持续把周围树木的养分抽向母巢。菌床点燃后,母巢第二阶段的孢子扩散范围减半。',
+    hp: 30,
+    stateTags: ['summon-source', 'infection', 'woods-only'],
+    activeEffects: [
+      { kind: 'inc-flag', flagName: 'boss_infection_pool_size', amount: 1, narrativeHint: '菌床向母巢输送感染孢子' },
+    ],
+    destroyEffects: [
+      { kind: 'clear-flag', flagName: 'boss_infection_pool_size' },
+      { kind: 'apply-stress', amount: 2, heroSelector: 'all-alive', narrativeHint: '菌床燃尽,残余孢子扩散' },
+    ],
+    interactChoices: [
+      {
+        id: 'env-mycelium-burn',
+        title: '用火油焚烧菌床',
+        description: '让前排英雄泼洒火油并点燃菌床;火势会反噬前排,但彻底断绝母巢养分。',
+        conditions: [],
+        effects: [
+          { kind: 'hp-delta', amount: -10, heroSelector: 'front-rank', narrativeHint: '火势反噬前排' },
+          { kind: 'inc-flag', flagName: 'env_mycelium_burned', amount: 1 },
+        ],
+        riskTags: ['frontline-risk', 'fire-damage'],
+      },
+      {
+        id: 'env-mycelium-seal',
+        title: '用抗孢子药剂封菌床',
+        description: '消耗"抗孢子药剂",直接封死菌床活性,无需前线冒险。',
+        conditions: [],
+        effects: [
+          { kind: 'inc-flag', flagName: 'env_mycelium_sealed', amount: 1 },
+        ],
+        riskTags: ['consume-boss-item'],
+      },
+      {
+        id: 'env-mycelium-skip',
+        title: '暂不处理菌床',
+        description: '跳过本轮环境交互,继续攻击母巢或处理其他目标。',
+        conditions: [],
+        effects: [
+          { kind: 'inc-flag', flagName: 'env_mycelium_skipped', amount: 1 },
+        ],
+        riskTags: ['miss-environment-window'],
+      },
+    ],
+  },
+  'env-spore-spore-sac': {
+    id: 'env-spore-spore-sac',
+    bossId: 'boss-spore-matriarch',
+    name: '巨型孢子囊',
+    description: '母巢之心附近悬挂的半透明孢子囊,直径近 1 米;囊内含有数百亿活性孢子。一旦破裂,会对全员造成 10 压力 + 5 HP 损失,但母巢会失去"孢子爆裂"技能。',
+    hp: 20,
+    stateTags: ['burst-attack', 'woods-only'],
+    activeEffects: [
+      { kind: 'set-flag', flagName: 'boss_spore_burst_active', flagValue: true },
+    ],
+    destroyEffects: [
+      { kind: 'clear-flag', flagName: 'boss_spore_burst_active' },
+      { kind: 'hp-delta', amount: -5, heroSelector: 'all-alive', narrativeHint: '孢子囊破裂,孢子云扩散' },
+      { kind: 'apply-stress', amount: 10, heroSelector: 'all-alive', narrativeHint: '孢子云造成群体压力' },
+    ],
+    interactChoices: [
+      {
+        id: 'env-sac-burst',
+        title: '主动戳破孢子囊',
+        description: '让前排英雄冒险靠近并用武器刺破孢子囊;全员受到 5 HP + 10 压力,但母巢失去孢子爆裂。',
+        conditions: [],
+        effects: [
+          { kind: 'inc-flag', flagName: 'env_sac_burst', amount: 1 },
+        ],
+        riskTags: ['party-damage', 'stress-burst'],
+      },
+      {
+        id: 'env-sac-ignore',
+        title: '绕开孢子囊',
+        description: '忽略孢子囊继续攻击母巢;孢子爆裂将在每轮自动触发,直到母巢 HP 降至 50% 以下。',
+        conditions: [],
+        effects: [
+          { kind: 'inc-flag', flagName: 'env_sac_ignored', amount: 1 },
+        ],
+        riskTags: ['recurring-damage'],
       },
     ],
   },
@@ -306,6 +447,121 @@ export const BOSS_INTELLIGENCE: Record<string, BossIntelligenceEntry> = {
       { kind: 'set-flag', flagName: 'intel_known_retreat', flagValue: true },
     ],
   },
+  // ============================================================
+  // 6C 孢疫母巢情报(8 条)
+  // ============================================================
+  'intel-spore-attack-1': {
+    id: 'intel-spore-attack-1',
+    bossId: 'boss-spore-matriarch',
+    title: '孢子爆裂',
+    category: 'attack-pattern',
+    summary: '母巢周期性释放孢子云,对全员造成群体压力 + 疾病。',
+    revealedDetail: '母巢每 2 轮释放一次孢子爆裂,对全员施加 8 压力 + 1 疾病抗性下降;携带"抗孢子药剂"或完成削弱任务"取得抗孢子药剂"可在本轮完全免疫。',
+    unlockSources: [
+      { type: 'investigation-quest', sourceId: 'task-spore-investigate-1' },
+    ],
+    gameplayEffects: [
+      { kind: 'set-flag', flagName: 'intel_known_孢子爆裂', flagValue: true },
+    ],
+  },
+  'intel-spore-attack-2': {
+    id: 'intel-spore-attack-2',
+    bossId: 'boss-spore-matriarch',
+    title: '菌丝缠绕',
+    category: 'attack-pattern',
+    summary: '母巢伸出菌丝缠绕前排,降低其站位并持续扣血。',
+    revealedDetail: '菌丝缠绕每 3 轮使用一次,锁定前排最低 HP 英雄,造成 4 HP 损失并将其从原站位拉至下一排;带"抗病"或"高 HP"tag 的职业可提前防御,损失减半。',
+    unlockSources: [
+      { type: 'elite-encounter', sourceId: 'elite-腐化林妖' },
+    ],
+    gameplayEffects: [
+      { kind: 'set-flag', flagName: 'intel_known_菌丝缠绕', flagValue: true },
+    ],
+  },
+  'intel-spore-status-1': {
+    id: 'intel-spore-status-1',
+    bossId: 'boss-spore-matriarch',
+    title: '孢子感染',
+    category: 'status-threat',
+    summary: '被母巢孢子感染的英雄每轮压力 +2,且可能传染队友。',
+    revealedDetail: '感染状态持续 4 轮,每轮 +2 压力且有 30% 概率传染相邻英雄;携带"抗孢子药剂"或完成削弱"取得抗孢子药剂"可完全免疫感染。',
+    unlockSources: [
+      { type: 'investigation-quest', sourceId: 'task-spore-investigate-1' },
+    ],
+    gameplayEffects: [
+      { kind: 'set-flag', flagName: 'intel_known_孢子感染', flagValue: true },
+    ],
+  },
+  'intel-spore-phase-1': {
+    id: 'intel-spore-phase-1',
+    bossId: 'boss-spore-matriarch',
+    title: '阶段 1:污染扩散',
+    category: 'phase-mechanic',
+    summary: '母巢进入第二阶段会扩散菌床并召唤感染体。',
+    revealedDetail: '进入第二阶段立即从外层菌床召出 2 个感染体,之后每 2 轮召唤 1 个,直到菌床被焚烧;若菌床已焚烧,第二阶段跳过召唤,直接进入孢子云蔓延阶段。',
+    unlockSources: [
+      { type: 'first-phase-encounter', sourceId: 'boss-spore-matriarch-phase-1' },
+    ],
+    gameplayEffects: [
+      { kind: 'set-flag', flagName: 'intel_known_phase1', flagValue: true },
+    ],
+  },
+  'intel-spore-phase-2': {
+    id: 'intel-spore-phase-2',
+    bossId: 'boss-spore-matriarch',
+    title: '阶段 2:母巢暴走',
+    category: 'phase-mechanic',
+    summary: '母巢进入第三阶段会暴走释放全部孢子。',
+    revealedDetail: '第三阶段每轮 100% 释放"孢子终爆":对全员施加 15 压力 + 30% 概率立刻进入死亡之门(若已感染则 +20%);持续 3 轮,玩家必须在前 2 轮打出决定性伤害。',
+    unlockSources: [
+      { type: 'first-boss-failure', sourceId: 'boss-spore-matriarch' },
+    ],
+    gameplayEffects: [
+      { kind: 'set-flag', flagName: 'intel_known_phase2', flagValue: true },
+    ],
+  },
+  'intel-spore-env-1': {
+    id: 'intel-spore-env-1',
+    bossId: 'boss-spore-matriarch',
+    title: '菌床结构弱点',
+    category: 'environment-target',
+    summary: '外层菌床有 3 处易燃点,用火油能彻底烧断。',
+    revealedDetail: '菌床底部连接母巢的菌丝有 3 处暴露在地表的根结,泼洒火油并点燃可彻底烧断;但火势会反噬前排英雄 10 HP。若携带"抗孢子药剂",可直接封死菌床,无需前线冒险。',
+    unlockSources: [
+      { type: 'special-curio', sourceId: 'curio-林地药剂师笔记' },
+    ],
+    gameplayEffects: [
+      { kind: 'set-flag', flagName: 'intel_known_env_mycelium', flagValue: true },
+    ],
+  },
+  'intel-spore-provision-1': {
+    id: 'intel-spore-provision-1',
+    bossId: 'boss-spore-matriarch',
+    title: '抗孢子药剂',
+    category: 'recommended-provision',
+    summary: '抗孢子药剂能完全免疫母巢的孢子疾病攻击。',
+    revealedDetail: '抗孢子药剂是唯一可在 Boss 战内主动解除"孢子感染"并免疫后续孢子爆裂的补给,每瓶持续 3 轮完全免疫;未带药剂时只能依赖"抗病 tag"或硬扛每轮 +2 压力 + 30% 传染。',
+    unlockSources: [
+      { type: 'class-analysis', sourceId: 'class-plague-doctor' },
+    ],
+    gameplayEffects: [
+      { kind: 'set-flag', flagName: 'intel_known_provision', flagValue: true },
+    ],
+  },
+  'intel-spore-retreat-1': {
+    id: 'intel-spore-retreat-1',
+    bossId: 'boss-spore-matriarch',
+    title: '孢子窒息撤退',
+    category: 'retreat-risk',
+    summary: 'Boss 进入第三阶段后撤退失败率显著上升。',
+    revealedDetail: '阶段 0 撤退成功率 60%(默认),阶段 1 降至 40%,阶段 2 仅 20%(孢子窒息);撤退成功后,削弱任务"取得抗孢子药剂"的效果会失效(直到下次挑战前不再生效),但"净化外层菌床"永久保留。',
+    unlockSources: [
+      { type: 'first-boss-failure', sourceId: 'boss-spore-matriarch' },
+    ],
+    gameplayEffects: [
+      { kind: 'set-flag', flagName: 'intel_known_retreat', flagValue: true },
+    ],
+  },
 };
 
 // =====================================================================
@@ -344,6 +600,47 @@ export const BOSS_WEAKENING_EFFECTS: Record<string, BossWeakeningEffect> = {
         phaseIndex: 2,
         modifiers: [
           { kind: 'set-flag', flagName: 'boss_curse_stress', flagValue: 1 },
+        ],
+      },
+    ],
+    encounterModifiers: [],
+    routeModifiers: [],
+    persistence: 'until-boss-defeated',
+  },
+  // ============================================================
+  // 6C 孢疫母巢削弱效果
+  // ============================================================
+  'weaken-spore-mycelium': {
+    id: 'weaken-spore-mycelium',
+    bossId: 'boss-spore-matriarch',
+    sourceQuestId: 'task-spore-weaken-1',
+    name: '净化外层菌床',
+    description: '外层菌床被焚毁,母巢第二阶段感染召唤池缩小到 1;玩家可少处理 1-2 个感染体,把战术资源集中在处理孢子囊或攻击母巢。',
+    phaseModifiers: [
+      {
+        phaseIndex: 1,
+        modifiers: [
+          { kind: 'set-flag', flagName: 'boss_infection_pool_size', flagValue: 1 },
+        ],
+      },
+    ],
+    encounterModifiers: [
+      { kind: 'clear-flag', flagName: 'boss_infection_pool_size' },
+    ],
+    routeModifiers: [],
+    persistence: 'until-boss-defeated',
+  },
+  'weaken-spore-immunity': {
+    id: 'weaken-spore-immunity',
+    bossId: 'boss-spore-matriarch',
+    sourceQuestId: 'task-spore-weaken-2',
+    name: '抗孢子免疫',
+    description: '携带抗孢子药剂进入 Boss 战,前 3 轮所有英雄完全免疫孢子爆裂和感染(压力减半);未带药剂时只能依赖"抗病 tag"职业。注意:撤退成功后此削弱会失效,需重新准备。',
+    phaseModifiers: [
+      {
+        phaseIndex: 2,
+        modifiers: [
+          { kind: 'set-flag', flagName: 'boss_spore_immunity', flagValue: 3 },
         ],
       },
     ],
@@ -580,6 +877,231 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
       },
     ],
   },
+  // ============================================================
+  // 6C 孢疫母巢阶段定义(3 个)
+  // ============================================================
+  'phase-spore-0': {
+    id: 'phase-spore-0',
+    bossId: 'boss-spore-matriarch',
+    phaseIndex: 0,
+    name: '孢子繁殖',
+    description: '母巢之心开始搏动,从外层菌床向四周释放出稀薄的孢子云;环境目标孢子囊显现,玩家可在本阶段先观察情报,或选择用火油焚烧菌床(需前排冒险)。',
+    enterConditions: [
+      { kind: 'flag-exists', flagName: 'boss_encounter_active' },
+    ],
+    exitConditions: [
+      { kind: 'flag-gte', flagName: 'boss_phase_rounds', value: 3 },
+    ],
+    bossModifiers: [
+      { kind: 'set-flag', flagName: 'boss_disease_aura', flagValue: 0.3 },
+    ],
+    environmentTargetIds: ['env-spore-spore-sac'],
+    summonRules: [],
+    tacticalOptionRules: [
+      {
+        id: 'tactic-spore-p0-probe',
+        title: '试探性攻击',
+        description: '前排试探母巢,确认"孢子爆裂"的节奏;适合情报尚不完整、需要数据收集的首次挑战。',
+        conditions: [],
+        weight: 1.0,
+        category: 'attack-core',
+        phaseIndex: 0,
+        effects: [
+          { kind: 'hp-delta', amount: 5, heroSelector: 'front-rank' },
+          { kind: 'inc-flag', flagName: 'boss_phase_rounds', amount: 1 },
+        ],
+        riskTags: ['frontline-risk', 'disease-aura'],
+      },
+      {
+        id: 'tactic-spore-p0-env',
+        title: '戳破孢子囊',
+        description: '派前排冒险戳破孢子囊,本轮全员受到 5 HP + 10 压力,但母巢失去孢子爆裂技能。',
+        conditions: [],
+        weight: 0.7,
+        category: 'destroy-environment',
+        phaseIndex: 0,
+        effects: [
+          { kind: 'inc-flag', flagName: 'env_sac_burst', amount: 1 },
+          { kind: 'inc-flag', flagName: 'boss_phase_rounds', amount: 1 },
+        ],
+        riskTags: ['party-damage', 'stress-burst'],
+      },
+      {
+        id: 'tactic-spore-p0-stabilize',
+        title: '稳定压力',
+        description: '全员在母巢前停留,集中缓解压力,放弃本轮输出;适合压力 ≥ 60 或疾病 ≥ 2 的队伍。',
+        conditions: [],
+        weight: 0.5,
+        category: 'stabilize-stress',
+        phaseIndex: 0,
+        effects: [
+          { kind: 'apply-stress', amount: -4, heroSelector: 'all-alive' },
+          { kind: 'inc-flag', flagName: 'boss_phase_rounds', amount: 1 },
+        ],
+        riskTags: ['skip-boss-damage'],
+      },
+    ],
+    phaseEvents: [
+      {
+        trigger: 'enter',
+        effects: [
+          { kind: 'set-flag', flagName: 'boss_encounter_active', flagValue: true },
+        ],
+        narrativeHint: 'Boss 战开始:母巢之心开始搏动',
+      },
+    ],
+  },
+  'phase-spore-1': {
+    id: 'phase-spore-1',
+    bossId: 'boss-spore-matriarch',
+    phaseIndex: 1,
+    name: '污染扩散',
+    description: '母巢从外层菌床召出感染体,孢子云蔓延速度加倍;若未完成"净化外层菌床"削弱,本阶段会持续刷新感染体,玩家必须在"清感染/攻核心/烧菌床"之间取舍。',
+    enterConditions: [
+      { kind: 'flag-gte', flagName: 'boss_phase_rounds', value: 3 },
+    ],
+    exitConditions: [
+      { kind: 'flag-gte', flagName: 'boss_phase_rounds', value: 6 },
+    ],
+    bossModifiers: [
+      { kind: 'clear-flag', flagName: 'boss_disease_aura' },
+    ],
+    environmentTargetIds: ['env-spore-mycelium-bed', 'env-spore-spore-sac'],
+    summonRules: [
+      {
+        summonId: 'summon-感染体',
+        maxPerPhase: 2,
+        modifiers: [
+          { kind: 'inc-flag', flagName: 'boss_infection_count', amount: 1 },
+        ],
+        trigger: { kind: 'flag-gte', flagName: 'boss_phase_rounds', value: 4 },
+      },
+    ],
+    tacticalOptionRules: [
+      {
+        id: 'tactic-spore-p1-attack-core',
+        title: '全力攻击核心',
+        description: '全员集中攻击母巢本体,放弃本轮处理感染体或菌床;适合菌床已被削弱任务焚毁的情况。',
+        conditions: [],
+        weight: 1.0,
+        category: 'attack-core',
+        phaseIndex: 1,
+        effects: [
+          { kind: 'hp-delta', amount: 8, heroSelector: 'all-alive' },
+          { kind: 'inc-flag', flagName: 'boss_phase_rounds', amount: 1 },
+        ],
+        riskTags: ['all-in'],
+      },
+      {
+        id: 'tactic-spore-p1-handle-summon',
+        title: '清理感染体',
+        description: '本轮先集中清理刚召出的感染体,延迟攻击母巢;但让母巢有 1 轮时间继续召唤更多感染体。',
+        conditions: [],
+        weight: 0.7,
+        category: 'handle-summon',
+        phaseIndex: 1,
+        effects: [
+          { kind: 'clear-flag', flagName: 'boss_infection_count' },
+          { kind: 'inc-flag', flagName: 'boss_phase_rounds', amount: 1 },
+        ],
+        riskTags: ['skip-boss-damage'],
+      },
+      {
+        id: 'tactic-spore-p1-destroy-env',
+        title: '焚烧外层菌床',
+        description: '派前排冒险泼洒火油并点燃菌床;火势反噬前排 -10 HP,但彻底断绝母巢后续召唤。',
+        conditions: [
+          { kind: 'flag-exists', flagName: 'env_mycelium_intact' },
+        ],
+        weight: 0.6,
+        category: 'destroy-environment',
+        phaseIndex: 1,
+        effects: [
+          { kind: 'inc-flag', flagName: 'env_mycelium_burned', amount: 1 },
+          { kind: 'clear-flag', flagName: 'env_mycelium_intact' },
+          { kind: 'inc-flag', flagName: 'boss_phase_rounds', amount: 1 },
+        ],
+        riskTags: ['frontline-risk', 'fire-damage'],
+      },
+    ],
+    phaseEvents: [
+      {
+        trigger: 'enter',
+        effects: [
+          { kind: 'set-flag', flagName: 'boss_phase_rounds', flagValue: 0 },
+          { kind: 'set-flag', flagName: 'env_mycelium_intact', flagValue: true },
+        ],
+        narrativeHint: '第二阶段:感染体从菌床涌出,母巢扩散孢子云',
+      },
+    ],
+  },
+  'phase-spore-2': {
+    id: 'phase-spore-2',
+    bossId: 'boss-spore-matriarch',
+    phaseIndex: 2,
+    name: '母巢暴走',
+    description: '母巢之心彻底激活,孢子云爆裂;每轮释放"孢子终爆":对全员施加 15 压力 + 30% 死亡之门。玩家必须在前 2 轮打出足够伤害,否则全员都可能进入死亡之门。',
+    enterConditions: [
+      { kind: 'flag-gte', flagName: 'boss_phase_rounds', value: 6 },
+    ],
+    exitConditions: [],
+    bossModifiers: [
+      { kind: 'set-flag', flagName: 'boss_spore_burst_active', flagValue: true },
+    ],
+    environmentTargetIds: [],
+    summonRules: [],
+    tacticalOptionRules: [
+      {
+        id: 'tactic-spore-p2-all-in',
+        title: '孤注一掷',
+        description: '无视一切,全力攻击母巢之心;本轮全员压力 +5,但能在第 2 轮结束前打出决定性伤害。',
+        conditions: [],
+        weight: 1.0,
+        category: 'attack-core',
+        phaseIndex: 2,
+        effects: [
+          { kind: 'hp-delta', amount: 12, heroSelector: 'all-alive' },
+          { kind: 'apply-stress', amount: 5, heroSelector: 'all-alive' },
+        ],
+        riskTags: ['all-in', 'high-stress'],
+      },
+      {
+        id: 'tactic-spore-p2-protect',
+        title: '保护关键英雄',
+        description: '让前排护住压力最高的英雄,本轮全员压力 -3;适合队伍已经过半数濒死、需要稳定下来的情况。',
+        conditions: [],
+        weight: 0.6,
+        category: 'protect-hero',
+        phaseIndex: 2,
+        effects: [
+          { kind: 'apply-stress', amount: -3, heroSelector: 'all-alive' },
+        ],
+        riskTags: ['skip-boss-damage'],
+      },
+      {
+        id: 'tactic-spore-p2-retreat',
+        title: '尝试撤退',
+        description: '在母巢暴走下撤退,基础成功率仅 20%(孢子窒息);若携带"抗孢子药剂"且未使用,撤退成功率 +20%。撤退后抗孢子削弱失效,但菌床削弱保留。',
+        conditions: [],
+        weight: 0.3,
+        category: 'retreat',
+        phaseIndex: 2,
+        effects: [
+          { kind: 'set-flag', flagName: 'boss_retreat_requested', flagValue: true },
+        ],
+        riskTags: ['retreat'],
+      },
+    ],
+    phaseEvents: [
+      {
+        trigger: 'enter',
+        effects: [
+          { kind: 'set-flag', flagName: 'boss_final_phase', flagValue: true },
+        ],
+        narrativeHint: '第三阶段:母巢之心暴走,孢子终爆开始',
+      },
+    ],
+  },
 };
 
 // =====================================================================
@@ -598,6 +1120,21 @@ export const BOSS_PERMANENT_REWARDS: Record<string, BossPermanentReward> = {
     ],
     unlockedTrinketIds: ['trinket-审判者封印'],
     unlockedQuestModifierIds: ['modifier-审判者余威'],
+  },
+  // ============================================================
+  // 6C 孢疫母巢永久奖励
+  // ============================================================
+  'reward-spore-matriarch': {
+    id: 'reward-spore-matriarch',
+    bossId: 'boss-spore-matriarch',
+    name: '母巢之心',
+    description: '击败孢疫母巢后,玩家获得"母巢之眼"饰品,林地区域抗病 +25%、疾病感染率 -20%;并解锁"菌丝共生"任务修正词(后续任务每场抗病 tag +1)。遗产不会被重复领取(SPEC §27)。',
+    campaignModifiers: [
+      { kind: 'set-flag', flagName: 'woods_disease_resist', flagValue: 0.25 },
+      { kind: 'set-flag', flagName: 'woods_infection_reduction', flagValue: 0.20 },
+    ],
+    unlockedTrinketIds: ['trinket-母巢之眼'],
+    unlockedQuestModifierIds: ['modifier-菌丝共生'],
   },
 };
 
@@ -626,6 +1163,29 @@ export const BOSS_QUEST_ITEMS: Record<string, BossQuestItemDefinition> = {
     tacticalChoiceIds: ['tactic-p1-force-phase'],
     consumeOnUse: true,
   },
+  // ============================================================
+  // 6C 孢疫母巢特殊任务物品
+  // ============================================================
+  'item-spore-antidote': {
+    id: 'item-spore-antidote',
+    bossId: 'boss-spore-matriarch',
+    name: '抗孢子药剂',
+    description: '由林地药剂师高塔中 7 种抗病草药调制的银瓶药剂,瓶口封蜡刻有"母巢之日";在 Boss 战可使用,本轮 + 后续 2 轮全员完全免疫孢子爆裂 + 感染。建议至少带 2 瓶应对阶段 1 + 阶段 2。',
+    inventorySlots: 1,
+    availableInFinalEncounter: true,
+    tacticalChoiceIds: ['tactic-spore-p2-purify'],
+    consumeOnUse: true,
+  },
+  'item-spore-purifier': {
+    id: 'item-spore-purifier',
+    bossId: 'boss-spore-matriarch',
+    name: '菌床净化圣物',
+    description: '从林地深处的隐士处获得的木化石,刻有"净化外层"的符文;在 Boss 战可一次性封锁外层菌床活性(无需前线冒险),或本轮破坏孢子囊;撤退成功后此物仍保留。',
+    inventorySlots: 1,
+    availableInFinalEncounter: true,
+    tacticalChoiceIds: ['tactic-spore-p1-seal'],
+    consumeOnUse: true,
+  },
 };
 
 // =====================================================================
@@ -642,7 +1202,11 @@ export const BOSS_DEFINITIONS: Record<string, BossDefinition> = {
     recommendedHeroTags: ['stress-resist', 'frontline', 'curse-immunity'],
     recommendedProvisionIds: ['item-test-sacred-water', 'item-test-holy-relic'],
     recommendedTrinketTags: ['stress-resist', 'curse-immunity'],
-    intelligenceEntryIds: Object.keys(BOSS_INTELLIGENCE),
+    intelligenceEntryIds: [
+      'intel-attack-1', 'intel-attack-2', 'intel-status-1',
+      'intel-phase-1', 'intel-phase-2',
+      'intel-env-1', 'intel-provision-1', 'intel-retreat-1',
+    ],
     investigationQuestIds: ['task-test-investigate-1'],
     weakeningQuestIds: ['task-test-weaken-1', 'task-test-weaken-2'],
     finalQuestId: 'task-test-final-1',
@@ -652,6 +1216,33 @@ export const BOSS_DEFINITIONS: Record<string, BossDefinition> = {
     retreatRules: TEST_BOSS_RETREAT,
     rewardTableId: 'reward-test-arbiter',
     permanentRewardId: 'reward-test-arbiter',
+  },
+  // ============================================================
+  // 6C 孢疫母巢
+  // ============================================================
+  'boss-spore-matriarch': {
+    id: 'boss-spore-matriarch',
+    name: '孢疫母巢',
+    regionId: 'corrupted-woods',
+    description: '生长在腐败林地深处的巨型真菌集合体,直径 30 米,内部有节奏地搏动;它以孢子和菌丝为武器,腐蚀一切进入林地的生物。核心威胁:疾病 + 腐蚀 + 孢子扩散 + 感染召唤;玩家通过情报 + 削弱任务 + 抗病组队,改变 Boss 战的多个关键节点。',
+    threatTags: ['disease', 'corruption', 'spore', 'infection'],
+    recommendedHeroTags: ['disease-resist', 'plague-doctor', 'anti-corruption'],
+    recommendedProvisionIds: ['item-spore-antidote', 'item-spore-purifier'],
+    recommendedTrinketTags: ['disease-resist', 'anti-spore'],
+    intelligenceEntryIds: [
+      'intel-spore-attack-1', 'intel-spore-attack-2', 'intel-spore-status-1',
+      'intel-spore-phase-1', 'intel-spore-phase-2',
+      'intel-spore-env-1', 'intel-spore-provision-1', 'intel-spore-retreat-1',
+    ],
+    investigationQuestIds: ['task-spore-investigate-1'],
+    weakeningQuestIds: ['task-spore-weaken-1', 'task-spore-weaken-2'],
+    finalQuestId: 'task-spore-final-1',
+    phaseDefinitionIds: ['phase-spore-0', 'phase-spore-1', 'phase-spore-2'],
+    environmentTargetIds: ['env-spore-mycelium-bed', 'env-spore-spore-sac'],
+    summonPoolIds: ['summon-感染体'],
+    retreatRules: SPORE_BOSS_RETREAT,
+    rewardTableId: 'reward-spore-matriarch',
+    permanentRewardId: 'reward-spore-matriarch',
   },
 };
 
