@@ -1,0 +1,100 @@
+{
+  "generatedAt": "2026-08-04T04:02:21.363Z",
+  "buildVersion": "0.9.0-rc1",
+  "totalIssues": 3,
+  "bySeverity": {
+    "blocker": 0,
+    "critical": 0,
+    "major": 0,
+    "minor": 2,
+    "polish": 1
+  },
+  "byStatus": {
+    "reported": 0,
+    "triaged": 0,
+    "confirmed": 0,
+    "fixing": 0,
+    "fixed": 0,
+    "verified": 1,
+    "deferred": 2,
+    "wont-fix": 0
+  },
+  "byCategory": {
+    "ui": 2,
+    "pwa": 1
+  },
+  "byReleaseTarget": {
+    "rc2": 0,
+    "1.0": 0,
+    "post-1.0": 3
+  },
+  "issues": [
+    {
+      "id": "BI-002",
+      "title": "持久化层 UI 未完整实现",
+      "description": "Save Portability 工具函数已就绪,但 UI 按钮未挂载",
+      "sourceTesterIds": [],
+      "playerSaveIds": [],
+      "buildVersion": "0.9.0-rc1",
+      "category": "ui",
+      "reproductionSteps": [
+        "新建战役",
+        "查找\"导出存档\"按钮"
+      ],
+      "expectedResult": "主入口有\"导入/导出\"按钮",
+      "actualResult": "工具函数可用,UI 未挂载",
+      "rootCause": "Phase 9 范围专注工具,UI 集成在 1.0.1",
+      "proposedFix": "1.0.1 补 Save/Load UI",
+      "severity": "minor",
+      "status": "deferred",
+      "releaseTarget": "post-1.0",
+      "createdAt": "2026-08-04T04:02:21.363Z",
+      "updatedAt": "2026-08-04T04:02:21.363Z"
+    },
+    {
+      "id": "BI-003",
+      "title": "PWA 启动图标 PNG 缺失",
+      "description": "manifest 引用 icon-192.png / icon-512.png,目前只有 SVG",
+      "sourceTesterIds": [],
+      "playerSaveIds": [],
+      "buildVersion": "0.9.0-rc1",
+      "category": "pwa",
+      "reproductionSteps": [
+        "PWA 安装",
+        "查看启动画面"
+      ],
+      "expectedResult": "PNG 图标显示",
+      "actualResult": "降级到 SVG",
+      "rootCause": "需要 ImageMagick/sharp 生成",
+      "proposedFix": "v1.0.1 生成 PNG",
+      "severity": "minor",
+      "status": "deferred",
+      "releaseTarget": "post-1.0",
+      "createdAt": "2026-08-04T04:02:21.363Z",
+      "updatedAt": "2026-08-04T04:02:21.363Z"
+    },
+    {
+      "id": "BI-001",
+      "title": "Phase 6 Debug Panel 未挂载生产 UI",
+      "description": "开发模式可访问 Debug Panel,生产构建不挂载。",
+      "sourceTesterIds": [],
+      "playerSaveIds": [],
+      "buildVersion": "0.9.0-rc1",
+      "category": "ui",
+      "reproductionSteps": [
+        "npm run dev",
+        "打开主页",
+        "检查 Debug 入口"
+      ],
+      "expectedResult": "生产构建无 Debug 入口",
+      "actualResult": "开发模式可访问,生产不挂载,符合 SPEC §5.2",
+      "rootCause": "isDebugEnabled() 在 production 返回 false",
+      "proposedFix": "保留当前行为,无需修复",
+      "severity": "polish",
+      "status": "verified",
+      "releaseTarget": "post-1.0",
+      "createdAt": "2026-08-04T04:02:21.363Z",
+      "updatedAt": "2026-08-04T04:02:21.363Z"
+    }
+  ]
+}
