@@ -103,6 +103,14 @@ export function isInSafePoint(state: GameState): boolean {
     return true;
   }
 
+  // 庄园首页(hamlet-home):week >= 1 + 无当前节点 + 无选择中 + 无战斗
+  if ((state.campaign?.week ?? 0) >= 1
+    && !state.currentNode
+    && !state.selectionInProgress
+    && !state.battle) {
+    return true;
+  }
+
   // 远征未结算:有当前节点 + 无选择中
   if (state.currentNode && !state.selectionInProgress && !state.battle) {
     return true;
@@ -200,6 +208,17 @@ export function evaluateUpdateSafety(state: GameState): SafePointStatus {
         reason: '已完成节点结果页,安全点',
       };
     }
+  }
+
+  if ((state.campaign?.week ?? 0) >= 1
+    && !state.currentNode
+    && !state.selectionInProgress
+    && !state.battle) {
+    return {
+      current: 'hamlet-home',
+      isSafe: true,
+      reason: '庄园首页,安全点',
+    };
   }
 
   return {

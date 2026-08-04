@@ -268,6 +268,22 @@ describe('Phase 10C: 漏斗进度 + 流失点分析(SPEC §16)', () => {
     expect(calculateFunnelProgress(funnel)).toBe(1);
   });
 
+  it('calculateFunnelProgress:从 GameState 推断 50 周通关 = 1', () => {
+    const state = makeBaseState();
+    state.campaign!.week = 50;
+    state.expeditionLog = [{ type: 'completed' } as any, { type: 'completed' } as any];
+    (state.campaign!.completedMissions as any) = [
+      { difficulty: 'medium' },
+      { difficulty: 'large' },
+    ];
+    (state.campaign!.defeatedBossIds as any) = ['a', 'b', 'c'];
+    state.finalCampaignState!.status = 'assault-active';
+    state.campaignEnding = { type: 'victory', finalWeek: 50, summary: 'x' };
+    const funnel = createFunnelState('1.0.0');
+    const next = deriveFunnelFromState(funnel, state);
+    expect(calculateFunnelProgress(next)).toBe(1);
+  });
+
   it('analyzeDropoff:最大流失点 = 第一个未达成', () => {
     const funnel = createFunnelState('0.9.0-rc1');
     funnel.campaignStarted = true;
