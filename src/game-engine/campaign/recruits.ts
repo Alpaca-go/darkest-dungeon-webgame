@@ -11,14 +11,14 @@ import { ensureCampaign } from './state.js';
 import { INITIAL_RECRUIT_COUNT } from './types.js';
 
 const HERO_FIRST_NAMES = [
-  ['阿瑟', 'crusader'],
-  ['凯恩', 'highwayman'],
-  ['莉娜', 'vestal'],
-  ['洛', 'plague_doctor'],
-  ['欧德丽', 'bounty_hunter'],
-  ['苦行者', 'jester'],
-  ['莫德', 'bounty_hunter'],
-  ['鲍德温', 'crusader'],
+  ['Reynauld', 'crusader'],
+  ['Dismas', 'highwayman'],
+  ['Junia', 'vestal'],
+  ['Paracelsus', 'plague_doctor'],
+  ['Baldwin', 'crusader'],
+  ['William', 'highwayman'],
+  ['Gwendolyn', 'vestal'],
+  ['Hamlet', 'plague_doctor'],
 ] as const;
 
 const POSITIVE_QUIRK_IDS = ['quirk_beast_hunter', 'quirk_hardy', 'quirk_quick_reflexes'];

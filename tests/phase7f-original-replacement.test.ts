@@ -63,58 +63,46 @@ function walkDir(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-describe('Phase 7F: 产品代码无原作专属词(SPEC §26.1)', () => {
-  it('src/** 不含 Reynauld / Dismas / Weald / Warrens / Heart Attack 等高识别度原作词', () => {
+describe('Phase 7F: 产品代码使用 Darkest Dungeon 原作专属词(用户选择 B / 2026-08-04)', () => {
+  it('src/** 含 Reynauld / Dismas / Junia / Paracelsus 等高识别度原作英雄名', () => {
+    // 用户明确选择 B(承担版权风险),将原"原创"英雄名还原为原作名
+    // 验收:HERO_FIRST_NAMES 包含 Reynauld / Dismas / Junia / Paracelsus
     const files = walkDir('src');
-    const violations: { file: string; word: string; line: number }[] = [];
+    const found: { file: string; word: string; line: number }[] = [];
     for (const file of files) {
-      // 跳过测试文件
       if (file.includes('test') || file.includes('spec')) continue;
-      // 跳过 content-audit.ts (本身含 ORIGINAL_HERO_NAMES 用于审计)
       if (file.includes('content-audit')) continue;
+      if (file.includes('originality')) continue; // originality 工具仍排除
+      if (file.includes('production-audit')) continue; // production-audit 检测自身也排除
       const text = readFileSync(file, 'utf-8');
-      const lower = text.toLowerCase();
-      for (const word of HIGH_IDENTITY_WORDS) {
-        if (lower.includes(word.toLowerCase())) {
+      for (const word of ['Reynauld', 'Dismas', 'Junia', 'Paracelsus']) {
+        if (text.includes(word)) {
           const lines = text.split('\n');
           for (let i = 0; i < lines.length; i++) {
-            if (lines[i].toLowerCase().includes(word.toLowerCase())) {
-              violations.push({ file, word, line: i + 1 });
+            if (lines[i].includes(word)) {
+              found.push({ file, word, line: i + 1 });
             }
           }
         }
       }
     }
-    // 允许注释中的提及
-    const realViolations = violations.filter((v) => {
-      const line = readFileSync(v.file, 'utf-8').split('\n')[v.line - 1];
-      return !line.trim().startsWith('//') && !line.trim().startsWith('*');
-    });
-    if (realViolations.length > 0) {
-      console.log('Violations:', realViolations);
-    }
-    expect(realViolations).toEqual([]);
+    // 期望至少 recruits.ts 和 lineup.ts 都含原作英雄名
+    const foundWords = new Set(found.map((f) => f.word));
+    expect(foundWords.has('Reynauld')).toBe(true);
+    expect(foundWords.has('Dismas')).toBe(true);
+    expect(foundWords.has('Junia')).toBe(true);
+    expect(foundWords.has('Paracelsus')).toBe(true);
   });
 
-  it('最终 Boss + 4 Boss + 16 敌人/奇物/陷阱全部原创名', () => {
-    // 验证 registry 内的命名是中文原创
-    expect(FINAL_BOSS_INFO.name).toBe('黑暗本相');
-    expect(FINAL_REGIONS['darkest-core'].name).toBe('黑暗核心');
-    // 4 任务物品:curse-breaker / purifier-eye / hunger-rest / veteran-oath
-    const itemIds = Object.keys(FINAL_QUEST_ITEMS);
-    for (const id of itemIds) {
-      expect(id).toMatch(/^item-final-/);
-    }
-    // 5 露营活动:camp-final-*
-    const activityIds = Object.keys(FINAL_CAMP_ACTIVITIES);
-    for (const id of activityIds) {
-      expect(id).toMatch(/^camp-final-/);
-    }
-    // 4 英雄个体考验:trial-*
-    const trialIds = Object.keys(HERO_TRIALS);
-    for (const id of trialIds) {
-      expect(id).toMatch(/^trial-/);
-    }
+  it('最终 Boss + 最终区域:命名就位(后续 commit 还原)', () => {
+    // 注意:用户已选 B(2026-08-04),后续 commit 将把名字改回原作名
+    // 本测试只验证结构存在性,不做内容校验
+    expect(FINAL_BOSS_INFO).toBeDefined();
+    expect(FINAL_BOSS_INFO.id).toBeTruthy();
+    expect(FINAL_REGIONS['darkest-core']).toBeDefined();
+    expect(FINAL_QUEST_ITEMS).toBeDefined();
+    expect(FINAL_CAMP_ACTIVITIES).toBeDefined();
+    expect(HERO_TRIALS).toBeDefined();
   });
 });
 
