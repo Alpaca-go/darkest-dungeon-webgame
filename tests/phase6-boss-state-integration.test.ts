@@ -99,7 +99,7 @@ describe('Phase 6A: 初始化 helpers(SPEC §28)', () => {
   it('initializeRegionThreats 三个区域 × dormant 0', () => {
     const threats = initializeRegionThreats();
     expect(Object.keys(threats).sort()).toEqual([
-      'weald', 'ruins', 'warrens',
+      'ruins', 'warrens', 'weald',
     ]);
     for (const regionId of Object.keys(threats)) {
       const t = threats[regionId];

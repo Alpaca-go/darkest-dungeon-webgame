@@ -1888,8 +1888,8 @@ export function initializeBossStates(): Record<string, BossCampaignState> {
 export function initializeRegionThreats(): Record<RegionId, RegionThreatProgress> {
   return {
     'ruins': createEmptyRegionThreat('ruins'),
-    'corrupted-woods': createEmptyRegionThreat('corrupted-woods'),
-    'underground-burrows': createEmptyRegionThreat('underground-burrows'),
+    'weald': createEmptyRegionThreat('weald'),
+    'warrens': createEmptyRegionThreat('warrens'),
   };
 }
 

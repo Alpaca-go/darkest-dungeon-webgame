@@ -212,17 +212,17 @@ describe('Phase 8F: 原创替换清单(SPEC §22)', () => {
     expect(fs.existsSync('tests/phase7f-original-replacement.test.ts')).toBe(true);
   });
 
-  it('项目名 + 世界观 + Boss 名原创(SPEC §22.1)', () => {
-    // Boss 名称原创
+  it('项目使用 Darkest Dungeon 原作名(用户选择 B / 2026-08-04)', () => {
+    // 用户已选 B(承担版权风险),Boss 名还原为原作英文名
     const arbiter = BOSS_DEFINITIONS['boss-test-arbiter'];
-    expect(arbiter.name).toBe('失落审判者'); // 原始翻译,非原作名
+    expect(arbiter.name).toBe('The Necromancer');
     const spore = BOSS_DEFINITIONS['boss-spore-matriarch'];
-    expect(spore.name).toBe('孢疫母巢');
+    expect(spore.name).toBe('The Hag');
     const burrows = BOSS_DEFINITIONS['boss-burrows-devourer'];
-    expect(burrows.name).toBe('饥渊吞噬者');
-    // 最终 Boss
+    expect(burrows.name).toBe('The Swine Prince');
+    // 最终区域
     const finalRegion = FINAL_REGIONS['darkest-core'];
-    expect(finalRegion.name).toBe('黑暗核心');
+    expect(finalRegion.name).toBe('The Darkest Dungeon');
   });
 
   it('任务物品原创名(SPEC §22.1)', () => {

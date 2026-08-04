@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-04T04:02:21.363Z",
+  "generatedAt": "2026-08-04T07:39:34.662Z",
   "buildVersion": "0.9.0-rc1",
   "totalIssues": 3,
   "bySeverity": {
@@ -48,8 +48,8 @@
       "severity": "minor",
       "status": "deferred",
       "releaseTarget": "post-1.0",
-      "createdAt": "2026-08-04T04:02:21.363Z",
-      "updatedAt": "2026-08-04T04:02:21.363Z"
+      "createdAt": "2026-08-04T07:39:34.662Z",
+      "updatedAt": "2026-08-04T07:39:34.662Z"
     },
     {
       "id": "BI-003",
@@ -70,8 +70,8 @@
       "severity": "minor",
       "status": "deferred",
       "releaseTarget": "post-1.0",
-      "createdAt": "2026-08-04T04:02:21.363Z",
-      "updatedAt": "2026-08-04T04:02:21.363Z"
+      "createdAt": "2026-08-04T07:39:34.662Z",
+      "updatedAt": "2026-08-04T07:39:34.662Z"
     },
     {
       "id": "BI-001",
@@ -93,8 +93,8 @@
       "severity": "polish",
       "status": "verified",
       "releaseTarget": "post-1.0",
-      "createdAt": "2026-08-04T04:02:21.363Z",
-      "updatedAt": "2026-08-04T04:02:21.363Z"
+      "createdAt": "2026-08-04T07:39:34.662Z",
+      "updatedAt": "2026-08-04T07:39:34.662Z"
     }
   ]
 }

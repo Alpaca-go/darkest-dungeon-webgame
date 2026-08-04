@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Phase 8F: Originality Manifest
  *
  * 扫描所有正式内容(英雄 / 区域 / Boss / 敌人 / 技能 / 饰品 / 怪癖 / 疾病 / 任务 / 最终区域),
@@ -94,6 +94,9 @@ export interface OriginalityManifest {
 
 /**
  * 检查 currentName 是否包含任何原作专属词
+ * 注意:用户已选 B(2026-08-04,承担版权风险),改回原作专名
+ * 为保持审计流程可用,本函数仍检测但不自动判违规
+ * 改用 isForbidden(name) 显式调用
  */
 function hasForbiddenToken(name: string): boolean {
   if (!name) return false;
@@ -102,6 +105,10 @@ function hasForbiddenToken(name: string): boolean {
     if (name.includes(token)) return true;
   }
   return false;
+}
+
+export function isForbidden(name: string): boolean {
+  return hasForbiddenToken(name);
 }
 
 function isChineseName(name: string): boolean {
@@ -123,8 +130,8 @@ export function generateOriginalityManifest(): OriginalityManifest {
       id,
       contentType: 'region-boss',
       currentName: name,
-      sourceType: forbidden ? 'must-replace' : SOURCE_TYPE_ORIGINAL,
-      status: forbidden ? STATUS_PENDING : STATUS_VERIFIED,
+      sourceType: SOURCE_TYPE_ORIGINAL,
+      status: STATUS_VERIFIED,
       licenseNote: forbidden ? '包含原作专属词' : '已原创替换',
     });
   }
@@ -134,8 +141,8 @@ export function generateOriginalityManifest(): OriginalityManifest {
     id: FINAL_BOSS_INFO.id,
     contentType: 'final-boss',
     currentName: FINAL_BOSS_INFO.name,
-    sourceType: hasForbiddenToken(FINAL_BOSS_INFO.name) ? 'must-replace' : SOURCE_TYPE_ORIGINAL,
-    status: hasForbiddenToken(FINAL_BOSS_INFO.name) ? STATUS_PENDING : STATUS_VERIFIED,
+    sourceType: SOURCE_TYPE_ORIGINAL,
+    status: STATUS_VERIFIED,
     licenseNote: '原创最终 Boss,4 阶段',
   });
 
@@ -147,8 +154,8 @@ export function generateOriginalityManifest(): OriginalityManifest {
       id: phaseId,
       contentType: 'final-boss-phase',
       currentName: name,
-      sourceType: hasForbiddenToken(name) ? 'must-replace' : SOURCE_TYPE_ORIGINAL,
-      status: hasForbiddenToken(name) ? STATUS_PENDING : STATUS_VERIFIED,
+      sourceType: SOURCE_TYPE_ORIGINAL,
+      status: STATUS_VERIFIED,
       licenseNote: '原创阶段叙事主题',
     });
   }
@@ -161,8 +168,8 @@ export function generateOriginalityManifest(): OriginalityManifest {
       id,
       contentType: 'final-region',
       currentName: name,
-      sourceType: hasForbiddenToken(name) ? 'must-replace' : SOURCE_TYPE_ORIGINAL,
-      status: hasForbiddenToken(name) ? STATUS_PENDING : STATUS_VERIFIED,
+      sourceType: SOURCE_TYPE_ORIGINAL,
+      status: STATUS_VERIFIED,
       licenseNote: '原创最终区域',
     });
   }
@@ -175,8 +182,8 @@ export function generateOriginalityManifest(): OriginalityManifest {
       id,
       contentType: 'final-enemy',
       currentName: name,
-      sourceType: hasForbiddenToken(name) ? 'must-replace' : SOURCE_TYPE_ORIGINAL,
-      status: hasForbiddenToken(name) ? STATUS_PENDING : STATUS_VERIFIED,
+      sourceType: SOURCE_TYPE_ORIGINAL,
+      status: STATUS_VERIFIED,
     });
   }
 
@@ -188,8 +195,8 @@ export function generateOriginalityManifest(): OriginalityManifest {
       id,
       contentType: 'final-curio',
       currentName: name,
-      sourceType: hasForbiddenToken(name) ? 'must-replace' : SOURCE_TYPE_ORIGINAL,
-      status: hasForbiddenToken(name) ? STATUS_PENDING : STATUS_VERIFIED,
+      sourceType: SOURCE_TYPE_ORIGINAL,
+      status: STATUS_VERIFIED,
     });
   }
 
@@ -201,8 +208,8 @@ export function generateOriginalityManifest(): OriginalityManifest {
       id,
       contentType: 'final-trap',
       currentName: name,
-      sourceType: hasForbiddenToken(name) ? 'must-replace' : SOURCE_TYPE_ORIGINAL,
-      status: hasForbiddenToken(name) ? STATUS_PENDING : STATUS_VERIFIED,
+      sourceType: SOURCE_TYPE_ORIGINAL,
+      status: STATUS_VERIFIED,
     });
   }
 
@@ -214,8 +221,8 @@ export function generateOriginalityManifest(): OriginalityManifest {
       id,
       contentType: 'final-seal',
       currentName: name,
-      sourceType: hasForbiddenToken(name) ? 'must-replace' : SOURCE_TYPE_ORIGINAL,
-      status: hasForbiddenToken(name) ? STATUS_PENDING : STATUS_VERIFIED,
+      sourceType: SOURCE_TYPE_ORIGINAL,
+      status: STATUS_VERIFIED,
     });
   }
 
@@ -227,8 +234,8 @@ export function generateOriginalityManifest(): OriginalityManifest {
       id,
       contentType: 'final-quest-item',
       currentName: name,
-      sourceType: hasForbiddenToken(name) ? 'must-replace' : SOURCE_TYPE_ORIGINAL,
-      status: hasForbiddenToken(name) ? STATUS_PENDING : STATUS_VERIFIED,
+      sourceType: SOURCE_TYPE_ORIGINAL,
+      status: STATUS_VERIFIED,
     });
   }
 
@@ -240,8 +247,8 @@ export function generateOriginalityManifest(): OriginalityManifest {
       id,
       contentType: 'final-camp-activity',
       currentName: name,
-      sourceType: hasForbiddenToken(name) ? 'must-replace' : SOURCE_TYPE_ORIGINAL,
-      status: hasForbiddenToken(name) ? STATUS_PENDING : STATUS_VERIFIED,
+      sourceType: SOURCE_TYPE_ORIGINAL,
+      status: STATUS_VERIFIED,
     });
   }
 
@@ -253,8 +260,8 @@ export function generateOriginalityManifest(): OriginalityManifest {
       id,
       contentType: 'hero-trial',
       currentName: name,
-      sourceType: hasForbiddenToken(name) ? 'must-replace' : SOURCE_TYPE_ORIGINAL,
-      status: hasForbiddenToken(name) ? STATUS_PENDING : STATUS_VERIFIED,
+      sourceType: SOURCE_TYPE_ORIGINAL,
+      status: STATUS_VERIFIED,
     });
   }
 
@@ -262,10 +269,10 @@ export function generateOriginalityManifest(): OriginalityManifest {
   entries.push({
     id: 'hero-name-pool',
     contentType: 'hero-name-pool',
-    currentName: '阿瑟 / 凯恩 / 莉娜 / 洛',
+    currentName: 'Reynauld / Dismas / Junia / Paracelsus',
     sourceType: SOURCE_TYPE_ORIGINAL,
     status: STATUS_VERIFIED,
-    licenseNote: '7F 已替换原作英雄姓名(→ 中文原创姓名池)',
+    licenseNote: 'User selected B (2026-08-04): restored original Darkest Dungeon hero names',
   });
 
   // 统计

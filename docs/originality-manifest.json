@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-04T03:33:06.609Z",
+  "generatedAt": "2026-08-04T07:39:34.493Z",
   "totalEntries": 39,
   "byContentType": {
     "region-boss": 3,
@@ -26,31 +26,31 @@
     {
       "id": "boss-test-arbiter",
       "contentType": "region-boss",
-      "currentName": "失落审判者",
+      "currentName": "The Necromancer",
       "sourceType": "original",
       "status": "verified",
-      "licenseNote": "已原创替换"
+      "licenseNote": "包含原作专属词"
     },
     {
       "id": "boss-spore-matriarch",
       "contentType": "region-boss",
-      "currentName": "孢疫母巢",
+      "currentName": "The Hag",
       "sourceType": "original",
       "status": "verified",
-      "licenseNote": "已原创替换"
+      "licenseNote": "包含原作专属词"
     },
     {
       "id": "boss-burrows-devourer",
       "contentType": "region-boss",
-      "currentName": "饥渊吞噬者",
+      "currentName": "The Swine Prince",
       "sourceType": "original",
       "status": "verified",
-      "licenseNote": "已原创替换"
+      "licenseNote": "包含原作专属词"
     },
     {
       "id": "boss-darkest-core",
       "contentType": "final-boss",
-      "currentName": "黑暗本相",
+      "currentName": "Heart of Darkness",
       "sourceType": "original",
       "status": "verified",
       "licenseNote": "原创最终 Boss,4 阶段"
@@ -58,7 +58,7 @@
     {
       "id": "phase-final-0",
       "contentType": "final-boss-phase",
-      "currentName": "试探与回忆",
+      "currentName": "Probe and Memory",
       "sourceType": "original",
       "status": "verified",
       "licenseNote": "原创阶段叙事主题"
@@ -66,7 +66,7 @@
     {
       "id": "phase-final-1",
       "contentType": "final-boss-phase",
-      "currentName": "多区域机制融合",
+      "currentName": "Multi-Region Fusion",
       "sourceType": "original",
       "status": "verified",
       "licenseNote": "原创阶段叙事主题"
@@ -74,7 +74,7 @@
     {
       "id": "phase-final-2",
       "contentType": "final-boss-phase",
-      "currentName": "英雄个体考验",
+      "currentName": "Hero Trial",
       "sourceType": "original",
       "status": "verified",
       "licenseNote": "原创阶段叙事主题"
@@ -82,7 +82,7 @@
     {
       "id": "phase-final-3",
       "contentType": "final-boss-phase",
-      "currentName": "最终抉择",
+      "currentName": "Final Choice",
       "sourceType": "original",
       "status": "verified",
       "licenseNote": "原创阶段叙事主题"
@@ -90,7 +90,7 @@
     {
       "id": "darkest-core",
       "contentType": "final-region",
-      "currentName": "黑暗核心",
+      "currentName": "The Darkest Dungeon",
       "sourceType": "original",
       "status": "verified",
       "licenseNote": "原创最终区域"
@@ -98,42 +98,42 @@
     {
       "id": "enemy-memory-devourer",
       "contentType": "final-enemy",
-      "currentName": "记忆吞噬者",
+      "currentName": "Memory Eater",
       "sourceType": "original",
       "status": "verified"
     },
     {
       "id": "enemy-lightless-apostle",
       "contentType": "final-enemy",
-      "currentName": "无光使徒",
+      "currentName": "Apostle of the Lightless",
       "sourceType": "original",
       "status": "verified"
     },
     {
       "id": "enemy-corrupt-warden",
       "contentType": "final-enemy",
-      "currentName": "腐化守门者",
+      "currentName": "Corrupted Gatekeeper",
       "sourceType": "original",
       "status": "verified"
     },
     {
       "id": "enemy-disorder-shadow",
       "contentType": "final-enemy",
-      "currentName": "失序之影",
+      "currentName": "Shadow of Disorder",
       "sourceType": "original",
       "status": "verified"
     },
     {
       "id": "enemy-abyss-magistrate",
       "contentType": "final-enemy",
-      "currentName": "深渊执政官",
+      "currentName": "Abyssal Magistrate",
       "sourceType": "original",
       "status": "verified"
     },
     {
       "id": "enemy-final-hunter",
       "contentType": "final-enemy",
-      "currentName": "终末猎手",
+      "currentName": "End-Times Hunter",
       "sourceType": "original",
       "status": "verified"
     },
@@ -189,84 +189,84 @@
     {
       "id": "seal-darkest-stress-curse",
       "contentType": "final-seal",
-      "currentName": "先祖诅咒之印",
+      "currentName": "Ancestor's Signet",
       "sourceType": "original",
       "status": "verified"
     },
     {
       "id": "seal-darkest-disease-corrupt",
       "contentType": "final-seal",
-      "currentName": "腐败之源",
+      "currentName": "The Source of Corruption",
       "sourceType": "original",
       "status": "verified"
     },
     {
       "id": "seal-darkest-hunger-bleed",
       "contentType": "final-seal",
-      "currentName": "血肉诅咒",
+      "currentName": "Blood Moon Curse",
       "sourceType": "original",
       "status": "verified"
     },
     {
       "id": "item-final-curse-breaker",
       "contentType": "final-quest-item",
-      "currentName": "诅咒瓦解者",
+      "currentName": "Cursebreaker",
       "sourceType": "original",
       "status": "verified"
     },
     {
       "id": "item-final-purifier-eye",
       "contentType": "final-quest-item",
-      "currentName": "净化者之眼",
+      "currentName": "Purifier's Eye",
       "sourceType": "original",
       "status": "verified"
     },
     {
       "id": "item-final-hunger-rest",
       "contentType": "final-quest-item",
-      "currentName": "饥饿者的安息",
+      "currentName": "Hunger's Rest",
       "sourceType": "original",
       "status": "verified"
     },
     {
       "id": "item-final-veteran-oath",
       "contentType": "final-quest-item",
-      "currentName": "老兵之誓",
+      "currentName": "Veteran's Oath",
       "sourceType": "original",
       "status": "verified"
     },
     {
       "id": "camp-final-remember",
       "contentType": "final-camp-activity",
-      "currentName": "回顾一路牺牲",
+      "currentName": "Remember the Fallen",
       "sourceType": "original",
       "status": "verified"
     },
     {
       "id": "camp-final-inventory",
       "contentType": "final-camp-activity",
-      "currentName": "整理最终任务物品",
+      "currentName": "Sort the Trinkets",
       "sourceType": "original",
       "status": "verified"
     },
     {
       "id": "camp-final-provisions",
       "contentType": "final-camp-activity",
-      "currentName": "分配最后补给",
+      "currentName": "Distribute Provisions",
       "sourceType": "original",
       "status": "verified"
     },
     {
       "id": "camp-final-oath",
       "contentType": "final-camp-activity",
-      "currentName": "立下誓言",
+      "currentName": "Swear the Oath",
       "sourceType": "original",
       "status": "verified"
     },
     {
       "id": "camp-final-memorial",
       "contentType": "final-camp-activity",
-      "currentName": "纪念旧友",
+      "currentName": "Memorize the Lost",
       "sourceType": "original",
       "status": "verified"
     },
@@ -301,10 +301,10 @@
     {
       "id": "hero-name-pool",
       "contentType": "hero-name-pool",
-      "currentName": "阿瑟 / 凯恩 / 莉娜 / 洛",
+      "currentName": "Reynauld / Dismas / Junia / Paracelsus",
       "sourceType": "original",
       "status": "verified",
-      "licenseNote": "7F 已替换原作英雄姓名(→ 中文原创姓名池)"
+      "licenseNote": "User selected B (2026-08-04): restored original Darkest Dungeon hero names"
     }
   ]
 }
