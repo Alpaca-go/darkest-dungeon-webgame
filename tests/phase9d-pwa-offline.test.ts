@@ -44,9 +44,9 @@ describe('Phase 9D: PWA 资源(SPEC §10)', () => {
     expect(m.display).toBe('standalone');
   });
 
-  it('manifest name 与项目名一致:暗域远征', () => {
+  it('manifest name 与项目名一致:Darkest Dungeon', () => {
     const m = JSON.parse(readIfExists('public/manifest.webmanifest')!);
-    expect(m.name).toContain('暗域远征');
+    expect(m.name).toContain('Darkest Dungeon');
   });
 
   it('manifest icons 至少 2 个(192 + 512 + svg)', () => {
@@ -122,7 +122,7 @@ describe('Phase 9D: 离线回退(SPEC §10.3)', () => {
   it('offline.html 包含离线提示', () => {
     const html = readIfExists('public/offline.html')!;
     expect(html).toContain('离线');
-    expect(html).toContain('暗域远征');
+    expect(html).toContain('Darkest Dungeon');
   });
 
   it('offline.html 是有效 HTML 结构', () => {
@@ -169,7 +169,7 @@ describe('Phase 9D: index.html PWA 集成', () => {
 
   it('index.html 标题含项目名', () => {
     const html = readIfExists('index.html')!;
-    expect(html).toContain('<title>暗域远征');
+    expect(html).toContain('<title>Darkest Dungeon');
   });
 
   it('index.html 含 noscript 回退', () => {

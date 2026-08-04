@@ -132,7 +132,7 @@ export function generateOriginalityManifest(): OriginalityManifest {
       currentName: name,
       sourceType: SOURCE_TYPE_ORIGINAL,
       status: STATUS_VERIFIED,
-      licenseNote: forbidden ? '包含原作专属词' : '已原创替换',
+      licenseNote: forbidden ? '原作专名(用户选 B 承担版权风险)' : '原创中文',
     });
   }
 
@@ -143,7 +143,7 @@ export function generateOriginalityManifest(): OriginalityManifest {
     currentName: FINAL_BOSS_INFO.name,
     sourceType: SOURCE_TYPE_ORIGINAL,
     status: STATUS_VERIFIED,
-    licenseNote: '原创最终 Boss,4 阶段',
+    licenseNote: '原作专名最终 Boss(用户选 B),4 阶段',
   });
 
   // 3. 最终 Boss 4 阶段名
@@ -156,7 +156,7 @@ export function generateOriginalityManifest(): OriginalityManifest {
       currentName: name,
       sourceType: SOURCE_TYPE_ORIGINAL,
       status: STATUS_VERIFIED,
-      licenseNote: '原创阶段叙事主题',
+      licenseNote: '原作专名阶段叙事(用户选 B)',
     });
   }
 
@@ -170,7 +170,7 @@ export function generateOriginalityManifest(): OriginalityManifest {
       currentName: name,
       sourceType: SOURCE_TYPE_ORIGINAL,
       status: STATUS_VERIFIED,
-      licenseNote: '原创最终区域',
+      licenseNote: '原作专名最终区域(用户选 B)',
     });
   }
 

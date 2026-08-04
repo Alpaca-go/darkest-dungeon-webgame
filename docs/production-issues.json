@@ -18,8 +18,8 @@
     "rootCause": "isDebugEnabled() 在 production 返回 false",
     "proposedFix": "保留当前行为,无需修复",
     "status": "reported",
-    "createdAt": "2026-08-04T07:39:34.088Z",
-    "updatedAt": "2026-08-04T07:39:34.088Z"
+    "createdAt": "2026-08-04T07:49:55.184Z",
+    "updatedAt": "2026-08-04T07:49:55.184Z"
   },
   {
     "id": "PI-002",
@@ -40,8 +40,8 @@
     "rootCause": "Phase 9 范围专注工具,UI 集成在 1.0.1",
     "proposedFix": "1.0.1 补 Save/Load UI",
     "status": "reported",
-    "createdAt": "2026-08-04T07:39:34.089Z",
-    "updatedAt": "2026-08-04T07:39:34.089Z"
+    "createdAt": "2026-08-04T07:49:55.185Z",
+    "updatedAt": "2026-08-04T07:49:55.185Z"
   },
   {
     "id": "PI-003",
@@ -62,7 +62,7 @@
     "rootCause": "需要 ImageMagick/sharp 生成",
     "proposedFix": "v1.0.1 生成 PNG",
     "status": "reported",
-    "createdAt": "2026-08-04T07:39:34.089Z",
-    "updatedAt": "2026-08-04T07:39:34.089Z"
+    "createdAt": "2026-08-04T07:49:55.185Z",
+    "updatedAt": "2026-08-04T07:49:55.185Z"
   }
 ]

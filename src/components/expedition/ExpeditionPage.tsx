@@ -89,15 +89,15 @@ export function ExpeditionPage() {
     return (
       <div className="app-shell">
         <div className="expedition-start">
-          <h1>暗域远征</h1>
+          <h1>Darkest Dungeon</h1>
           <p className="subtitle">单页节点远征 · 移动优先</p>
           <div className="loadout">
             <h3>默认队伍</h3>
             <ul>
-              <li>圣骑士 阿瑟</li>
-              <li>浪人 凯恩</li>
-              <li>祭司 莉娜</li>
-              <li>药使 洛</li>
+              <li>Crusader Reynauld</li>
+              <li>Highwayman Dismas</li>
+              <li>Vestal Junia</li>
+              <li>Plague Doctor Paracelsus</li>
             </ul>
             <div className="divider" />
             <h3>默认补给</h3>

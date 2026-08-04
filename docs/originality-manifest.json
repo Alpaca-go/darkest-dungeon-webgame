@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-04T07:39:34.493Z",
+  "generatedAt": "2026-08-04T07:49:55.785Z",
   "totalEntries": 39,
   "byContentType": {
     "region-boss": 3,
@@ -29,7 +29,7 @@
       "currentName": "The Necromancer",
       "sourceType": "original",
       "status": "verified",
-      "licenseNote": "包含原作专属词"
+      "licenseNote": "原作专名(用户选 B 承担版权风险)"
     },
     {
       "id": "boss-spore-matriarch",
@@ -37,7 +37,7 @@
       "currentName": "The Hag",
       "sourceType": "original",
       "status": "verified",
-      "licenseNote": "包含原作专属词"
+      "licenseNote": "原作专名(用户选 B 承担版权风险)"
     },
     {
       "id": "boss-burrows-devourer",
@@ -45,7 +45,7 @@
       "currentName": "The Swine Prince",
       "sourceType": "original",
       "status": "verified",
-      "licenseNote": "包含原作专属词"
+      "licenseNote": "原作专名(用户选 B 承担版权风险)"
     },
     {
       "id": "boss-darkest-core",
@@ -53,7 +53,7 @@
       "currentName": "Heart of Darkness",
       "sourceType": "original",
       "status": "verified",
-      "licenseNote": "原创最终 Boss,4 阶段"
+      "licenseNote": "原作专名最终 Boss(用户选 B),4 阶段"
     },
     {
       "id": "phase-final-0",
@@ -61,7 +61,7 @@
       "currentName": "Probe and Memory",
       "sourceType": "original",
       "status": "verified",
-      "licenseNote": "原创阶段叙事主题"
+      "licenseNote": "原作专名阶段叙事(用户选 B)"
     },
     {
       "id": "phase-final-1",
@@ -69,7 +69,7 @@
       "currentName": "Multi-Region Fusion",
       "sourceType": "original",
       "status": "verified",
-      "licenseNote": "原创阶段叙事主题"
+      "licenseNote": "原作专名阶段叙事(用户选 B)"
     },
     {
       "id": "phase-final-2",
@@ -77,7 +77,7 @@
       "currentName": "Hero Trial",
       "sourceType": "original",
       "status": "verified",
-      "licenseNote": "原创阶段叙事主题"
+      "licenseNote": "原作专名阶段叙事(用户选 B)"
     },
     {
       "id": "phase-final-3",
@@ -85,7 +85,7 @@
       "currentName": "Final Choice",
       "sourceType": "original",
       "status": "verified",
-      "licenseNote": "原创阶段叙事主题"
+      "licenseNote": "原作专名阶段叙事(用户选 B)"
     },
     {
       "id": "darkest-core",
@@ -93,7 +93,7 @@
       "currentName": "The Darkest Dungeon",
       "sourceType": "original",
       "status": "verified",
-      "licenseNote": "原创最终区域"
+      "licenseNote": "原作专名最终区域(用户选 B)"
     },
     {
       "id": "enemy-memory-devourer",

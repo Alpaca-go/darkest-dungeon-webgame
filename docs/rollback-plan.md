@@ -1,4 +1,4 @@
-# Rollback Plan — 暗域远征 1.0
+# Rollback Plan — Darkest Dungeon 1.0
 
 > 适用版本:0.9.0-rc1 / 0.9.0-rc2 / 1.0.0
 > 最后更新:2026-08-04

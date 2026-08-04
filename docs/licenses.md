@@ -1,8 +1,8 @@
-# Licenses — 暗域远征 1.0
+# Licenses — Darkest Dungeon 1.0
 
 ## 1. 项目代码许可
 
-本项目(暗域远征 / Darkest Dungeon Webgame)采用 **MIT 许可证** 发布。
+本项目(Darkest Dungeon Webgame)采用 **MIT 许可证** 发布。
 
 ```
 MIT License
@@ -51,18 +51,23 @@ SOFTWARE.
 
 ## 3. 原创性声明(SPEC §22)
 
-本项目为**原创作品**,参考《Darkest Dungeon》电子游戏核心机制与《赛博朋克 2077》网页交互模式,但:
+> **2026-08-04 重要变更**:用户选择**路线 B(承担版权风险)**,本项目现已使用原作《Darkest Dungeon》专名
+> (英雄 Reynauld / Dismas / Junia / Paracelsus、Boss Necromancer / Hag / Swine Prince、
+> 区域 Weald / Warrens、最终区域 The Darkest Dungeon、最终 Boss Heart of Darkness 等)。
+
+本项目以《Darkest Dungeon》电子游戏为**基础进行扩展与重制**,代码与游戏机制实现为原创:
 
 - ❌ **不包含** 原作美术资源(图标 / 立绘 / 地图)
 - ❌ **不包含** 原作音频(音乐 / 音效)
 - ❌ **不包含** 原作 Logo
-- ❌ **不包含** 原作文案(剧情 / 任务描述 / 角色对话)
-- ❌ **不包含** 原作专属角色名(Reynauld / Dismas / Junia 等)
-- ❌ **不包含** 原作区域名(Ruins / Weald / Warrens / Cove 等)
+- ❌ **不包含** 原作文案原文(剧情 / 任务描述 / 角色对话)
+- ✅ **使用** 原作专有名称(角色 / 区域 / Boss / 敌人 / 任务物品) — 用户主动承担版权风险
 
-所有内容(英雄姓名 / 区域名 / Boss 名 / 技能名 / 怪癖 / 疾病 / 饰品 / 任务)均为**中文原创**。
+所有游戏机制实现(远征系统 / 压力系统 / 战斗 / 露营 / 持久化 / 迁移 / 审计 / 发布工程)均为**原创**。
 
 详见 `docs/originality-manifest.json` 和 `docs/originality-audit-report.md`。
+Production Audit 报告会标记未授权词(`unlicensedAssetsPresent` > 0)为 Blocker,
+由发布负责人人工签字放行,详见 `docs/production-build-audit.md`。
 
 ---
 
@@ -72,8 +77,8 @@ SOFTWARE.
 |------|------|------|
 | 启动图标 (`icons/icon.svg`) | 原创 SVG | 公开使用 |
 | 品牌色 (#8b1e1e 暗红) | 通用色值 | 公开使用 |
-| 项目名(暗域远征) | 原创 | 公开使用 |
-| 项目名(英文 Darkest Dungeon Webgame) | 仅 package.json 标识 | package 名 |
+| 项目名(Darkest Dungeon) | 参考原作专名(用户选 B 承担版权风险) | 见 §3 |
+| 包名(`darkest-dungeon-webgame`) | 仅 package.json 标识 | package 名 |
 
 ---
 

@@ -1,4 +1,4 @@
-# 暗域远征 — Phase 9 完成报告
+# Darkest Dungeon — Phase 9 完成报告
 
 > 阶段:Phase 9 — 封闭测试、发布工程与 1.0 上线
 > 范围:9A Production Build Mode + 9B 存档导入导出 + 9C Diagnostic Bundle + 9D PWA 离线 + 9E 发布文档 + 9F 6 条 Golden Run + 9G Beta Issue 管理 + 9H 收官报告
@@ -60,7 +60,7 @@ Phase 1-8 已经形成完整闭环 + 通过审计 + 947 测试。Phase 9 目标:
 - `src/build-mode.ts` — 5 模式检测(development / test / audit / release-candidate / production)
 - `src/tools/production-audit.ts` — 9 项检查(Debug / 测试 Seed / 未授权词 / 客户端密钥 / 占位 / 内部概率 / PWA / License / Version)
 - `src/tools/production-forbidden-tokens.json` — 原作词库(JSON 隔离避免 src/** 扫描触发 7F)
-- **项目正式名**:`暗域远征`(替换原 `Darkest Dungeon` 暴露)
+- **项目正式名**:`Darkest Dungeon`(用户选 B 承担版权风险,使用原作专名)
 - 18 测试覆盖,0 Blocker / 0 Critical
 - `docs/production-build-audit.md` 报告生成
 
@@ -234,7 +234,7 @@ Phase 1-8 已经形成完整闭环 + 通过审计 + 947 测试。Phase 9 目标:
 ## 12. 1.0 发布清单(SPEC §23)
 
 ### 12.1 产品
-- ✅ 正式名称(暗域远征)
+- ✅ 正式名称(Darkest Dungeon)
 - ✅ Logo(`icons/icon.svg`)
 - ✅ 启动画面
 - ✅ 游戏说明(`docs/game-instructions.md`)
@@ -259,14 +259,14 @@ Phase 1-8 已经形成完整闭环 + 通过审计 + 947 测试。Phase 9 目标:
 - ⚠️ Source Archive(待发布时打 archive)
 - ✅ Rollback Build(流程就位)
 
-### 12.3 法务与原创
+### 12.3 法务与原作专名
 - ✅ Originality Manifest
 - ✅ License 清单(`docs/licenses.md`)
 - ✅ 第三方依赖 License
 - ✅ 素材来源
 - ✅ 隐私说明(`docs/privacy-notice.md`)
-- ✅ 未授权资产 = 0
-- ✅ 原作专属视觉 / 音频 / Logo / 角色立绘 = 0
+- ⚠️ 未授权资产 > 0(用户 2026-08-04 选 B 主动承担版权风险,Production Audit Blocker 走人工签字放行)
+- ✅ 原作专属视觉 / 音频 / Logo / 角色立绘 = 0(仅专名使用)
 
 ### 12.4 QA
 - ✅ Blocker 0

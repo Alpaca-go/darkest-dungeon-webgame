@@ -1,4 +1,4 @@
-# 暗域远征 — Phase 10 完成报告
+# Darkest Dungeon — Phase 10 完成报告
 
 > 阶段:Phase 10 — 1.0 上线维护、玩家验证、补丁发布与 1.1 路线决策
 > 范围:10A Production Issue + 10B 存档安全 + 10C 漏斗/匿名摘要 + 10D 实战平衡 + 10E Patch 流程 + 10F 1.1 路线评估 + 10G 6 Golden Run

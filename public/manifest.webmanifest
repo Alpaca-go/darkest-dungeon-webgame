@@ -1,7 +1,7 @@
 {
-  "name": "暗域远征 - 完整战役",
-  "short_name": "暗域远征",
-  "description": "原创单页网页游戏,基于节点远征与压力生存机制,完整战役从新档到最终 Boss",
+  "name": "Darkest Dungeon - 完整战役",
+  "short_name": "Darkest Dungeon",
+  "description": "单页网页游戏,基于节点远征与压力生存机制,完整战役从新档到最终 Boss",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

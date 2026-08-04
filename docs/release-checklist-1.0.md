@@ -1,4 +1,4 @@
-# Release Checklist — 暗域远征 1.0
+# Release Checklist — Darkest Dungeon 1.0
 
 > 最后更新:2026-08-04
 > 适用版本:v1.0.0
