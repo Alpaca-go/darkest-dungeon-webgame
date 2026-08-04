@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Darkest Dungeon inspired single-page roguelike - Phase 0 rule prototype",
+  "description": "Darkest Dungeon inspired single-page roguelike - Phase 5: multi-region, region rules, dedicated enemies and quest generation",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
