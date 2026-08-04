@@ -27,14 +27,15 @@
 import type { GameState } from '../game-engine/expedition/types.js';
 import { GAME_STATE_VERSION } from '../game-engine/expedition/types.js';
 
-const STORAGE_KEY = 'dd-web-expedition-save-v5';
+const STORAGE_KEY = 'dd-web-expedition-save-v6';
+const STORAGE_KEY_V5 = 'dd-web-expedition-save-v5';
 const STORAGE_KEY_V4 = 'dd-web-expedition-save-v4';
 const STORAGE_KEY_V3 = 'dd-web-expedition-save-v3';
 const STORAGE_KEY_V2 = 'dd-web-expedition-save-v2';
 const SETTINGS_KEY = 'dd-web-settings-v5';
 
 export interface SaveData {
-  version: 5 | 4;
+  version: 6 | 5 | 4;
   state: GameState;
   savedAt: string;
 }
@@ -49,13 +50,13 @@ export function saveGame(state: GameState): void {
   if (typeof localStorage === 'undefined') return;
   try {
     const data: SaveData = {
-      version: 5,
+      version: 6,
       state,
       savedAt: new Date().toISOString(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    // 写完 v5 后清掉旧 v4
-    try { localStorage.removeItem(STORAGE_KEY_V4); } catch { /* ignore */ }
+    // 写完 v6 后清掉旧 v5
+    try { localStorage.removeItem(STORAGE_KEY_V5); } catch { /* ignore */ }
   } catch (e) {
     console.warn('[save] failed to save game', e);
   }
@@ -64,26 +65,40 @@ export function saveGame(state: GameState): void {
 export function loadGame(): SaveData | null {
   if (typeof localStorage === 'undefined') return null;
   try {
-    // 优先读 v5
-    const v5Raw = localStorage.getItem(STORAGE_KEY);
-    if (v5Raw) {
-      const data = JSON.parse(v5Raw) as SaveData;
-      if (data.version !== 5) return null;
+    // 优先读 v6
+    const v6Raw = localStorage.getItem(STORAGE_KEY);
+    if (v6Raw) {
+      const data = JSON.parse(v6Raw) as SaveData;
+      if (data.version !== 6) return null;
       if (data.state.version !== GAME_STATE_VERSION) return null;
       return data;
     }
-    // 没有 v5 尝试 v4 迁移
-    const v4Raw = localStorage.getItem(STORAGE_KEY_V4);
-    if (v4Raw) {
-      const v4 = JSON.parse(v4Raw) as { version: 4; state: GameState; savedAt: string };
-      if (v4.version !== 4) return null;
-      const migrated = migrateV4ToV5(v4);
+    // 没有 v6 尝试 v5 迁移
+    const v5Raw = localStorage.getItem(STORAGE_KEY_V5);
+    if (v5Raw) {
+      const v5 = JSON.parse(v5Raw) as { version: 5; state: GameState; savedAt: string };
+      if (v5.version !== 5) return null;
+      const migrated = migrateV5ToV6(v5);
       if (migrated) {
         saveGame(migrated.state);
         return migrated;
       }
     }
-    // 没有 v4 尝试 v3 迁移(链式 v3 → v4 → v5)
+    // 没有 v5 尝试 v4 迁移(链式 v4 → v5 → v6)
+    const v4Raw = localStorage.getItem(STORAGE_KEY_V4);
+    if (v4Raw) {
+      const v4 = JSON.parse(v4Raw) as { version: 4; state: GameState; savedAt: string };
+      if (v4.version !== 4) return null;
+      const v5Migrated = migrateV4ToV5(v4);
+      if (v5Migrated) {
+        const v6Migrated = migrateV5ToV6(v5Migrated);
+        if (v6Migrated) {
+          saveGame(v6Migrated.state);
+          return v6Migrated;
+        }
+      }
+    }
+    // 没有 v4 尝试 v3 迁移(链式 v3 → v4 → v5 → v6)
     const v3Raw = localStorage.getItem(STORAGE_KEY_V3);
     if (v3Raw) {
       const v3 = JSON.parse(v3Raw) as { version: 3; state: GameState; savedAt: string };
@@ -92,12 +107,15 @@ export function loadGame(): SaveData | null {
       if (v4Migrated) {
         const v5Migrated = migrateV4ToV5(v4Migrated);
         if (v5Migrated) {
-          saveGame(v5Migrated.state);
-          return v5Migrated;
+          const v6Migrated = migrateV5ToV6(v5Migrated);
+          if (v6Migrated) {
+            saveGame(v6Migrated.state);
+            return v6Migrated;
+          }
         }
       }
     }
-    // 没有 v3 尝试 v2 迁移(链式 v2 → v3 → v4 → v5)
+    // 没有 v3 尝试 v2 迁移(链式 v2 → v3 → v4 → v5 → v6)
     const v2Raw = localStorage.getItem(STORAGE_KEY_V2);
     if (v2Raw) {
       const v2 = JSON.parse(v2Raw) as { version: 2; state: GameState; savedAt: string };
@@ -133,8 +151,11 @@ export function loadGame(): SaveData | null {
       if (v4Migrated) {
         const v5Migrated = migrateV4ToV5(v4Migrated);
         if (v5Migrated) {
-          saveGame(v5Migrated.state);
-          return v5Migrated;
+          const v6Migrated = migrateV5ToV6(v5Migrated);
+          if (v6Migrated) {
+            saveGame(v6Migrated.state);
+            return v6Migrated;
+          }
         }
       }
     }
@@ -246,6 +267,90 @@ function migrateV4ToV5(v4: { state: GameState; savedAt: string }): SaveData | nu
       : s.hamlet,
   };
   return { version: 5, state: newState, savedAt: v4.savedAt };
+}
+
+/**
+ * V5 → V6 迁移(Phase 6):
+ *  - 升级 state.version 5 → 6
+ *  - 补 campaign.bossStates(懒初始化;但为了"加载即可用",这里直接初始化)
+ *  - 补 campaign.regionThreats(同上)
+ *  - 补 campaign.campaignThreat(同上)
+ *  - 补 expedition.bossEncounterState / bossQuestItemIds / activeBossWeakeningEffectIds
+ *  - 把已有 bossQuestReady 迁移为 BossCampaignState.status(SPEC §28)
+ */
+function migrateV5ToV6(v5: { state: GameState; savedAt: string }): SaveData | null {
+  const s = v5.state;
+  // 构造 v6 campaign
+  const campaign = s.campaign
+    ? {
+        ...s.campaign,
+        bossStates: s.campaign.bossStates ?? (() => {
+          // 懒初始化:根据 regionProgress.bossQuestReady 推断 status
+          const result: Record<string, import('../game-engine/boss/types.js').BossCampaignState> = {};
+          const bossIds = Object.keys(s.campaign!.regionProgress ?? {});
+          for (const regionId of bossIds) {
+            const progress = s.campaign!.regionProgress![regionId];
+            const bossId = `boss-test-arbiter`; // 6A 只有一个测试 boss
+            // 6B 阶段都是测试 boss,真实 3 boss 在 6C/6D
+            const ready = progress?.bossQuestReady === true;
+            const status: import('../game-engine/boss/types.js').BossStatus = ready
+              ? 'rumored'
+              : 'hidden';
+            // 只对测试 boss 区域(ruins)初始化
+            if (regionId === 'ruins') {
+              result[bossId] = {
+                bossId,
+                regionId: 'ruins' as any,
+                status,
+                intelligenceProgress: 0,
+                discoveredIntelligenceEntryIds: [],
+                completedInvestigationQuestIds: [],
+                completedWeakeningQuestIds: [],
+                activeWeakeningEffectIds: [],
+                failedAttemptCount: 0,
+                retreatCount: 0,
+                unlockedAtWeek: ready ? s.campaign!.week : null,
+                defeatedAtWeek: null,
+              };
+            }
+          }
+          return result;
+        })(),
+        regionThreats: s.campaign.regionThreats ?? (() => {
+          const result: Record<string, import('../game-engine/boss/types.js').RegionThreatProgress> = {};
+          for (const regionId of ['ruins', 'corrupted-woods', 'underground-burrows']) {
+            result[regionId] = {
+              regionId: regionId as any,
+              state: 'dormant',
+              threatValue: 0,
+              weeklyGrowth: 0,
+              activeThreatModifierIds: [],
+            };
+          }
+          return result;
+        })(),
+        campaignThreat: s.campaign.campaignThreat ?? {
+          defeatedBossIds: [],
+          totalBossesDefeated: 0,
+          campaignThreatLevel: 0,
+          finalCampaignGateReady: false,
+        },
+      }
+    : s.campaign;
+  // 构造 v6 expedition
+  const expedition = {
+    ...s.expedition,
+    bossEncounterState: s.expedition.bossEncounterState ?? null,
+    bossQuestItemIds: s.expedition.bossQuestItemIds ?? [],
+    activeBossWeakeningEffectIds: s.expedition.activeBossWeakeningEffectIds ?? [],
+  };
+  const newState: GameState = {
+    ...s,
+    version: 6 as typeof GAME_STATE_VERSION,
+    campaign,
+    expedition,
+  };
+  return { version: 6, state: newState, savedAt: v5.savedAt };
 }
 
 export function clearGame(): void {

@@ -34,7 +34,7 @@ function freshGameState(week: number = 1): GameState {
     status: 'active',
   };
   return {
-    version: 5,
+    version: 6,
     mode: 'hamlet-overview',
     seed: 'test-seed',
     expedition: {
