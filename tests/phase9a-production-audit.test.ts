@@ -130,9 +130,17 @@ describe('Phase 9A: Production Audit(SPEC §5.3)', () => {
     expect(audit.isReleaseReady).toBe(true);
   });
 
-  it('PWA Manifest 缺失(SPEC §10.1 待 9D 实现)', () => {
-    // 9A 阶段允许缺失,9D 补齐
-    expect(audit.missingPwaManifest).toBe(true);
+  it('PWA Manifest 存在(Phase 9D 补齐)', () => {
+    // 9D 阶段已补齐 public/manifest.webmanifest
+    expect(audit.missingPwaManifest).toBe(false);
+  });
+
+  it('Service Worker 存在(Phase 9D 补齐)', () => {
+    expect(audit.missingServiceWorker).toBe(false);
+  });
+
+  it('离线回退页存在(Phase 9D 补齐)', () => {
+    expect(audit.missingOfflineFallback).toBe(false);
   });
 
   it('扫描文件数 > 50', () => {

@@ -1,0 +1,47 @@
+{
+  "name": "暗域远征 - 完整战役",
+  "short_name": "暗域远征",
+  "description": "原创单页网页游戏,基于节点远征与压力生存机制,完整战役从新档到最终 Boss",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#8b1e1e",
+  "lang": "zh-CN",
+  "scope": "/",
+  "categories": ["games", "strategy", "role-playing"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "新建战役",
+      "short_name": "新建",
+      "url": "/?action=new"
+    },
+    {
+      "name": "继续战役",
+      "short_name": "继续",
+      "url": "/?action=continue"
+    }
+  ],
+  "prefer_related_applications": false,
+  "edge_side_panel": false
+}

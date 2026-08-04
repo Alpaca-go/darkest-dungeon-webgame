@@ -2,11 +2,58 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Darkest Dungeon Webgame</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#8b1e1e" />
+    <meta name="description" content="暗域远征 - 原创单页网页游戏,基于节点远征与压力生存机制,完整战役从新档到最终 Boss。" />
+    <meta name="application-name" content="暗域远征" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="暗域远征" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <title>暗域远征 - 完整战役</title>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <div style="padding: 24px; text-align: center; font-family: sans-serif; color: #333;">
+        暗域远征需要 JavaScript 才能运行。请启用后刷新。
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Service Worker 注册(Phase 9D)
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+            .register('/sw.js')
+            .then((reg) => {
+              console.log('[SW] registered', reg.scope);
+              // 检测更新:不自动激活,等玩家确认
+              reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                if (!newWorker) return;
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    console.log('[SW] new version installed, will activate on next load');
+                  }
+                });
+              });
+            })
+            .catch((err) => {
+              console.warn('[SW] registration failed', err);
+            });
+        });
+      }
+
+      // 离线状态提示(SPEC §10.3)
+      window.addEventListener('online', () => {
+        console.log('[net] online');
+      });
+      window.addEventListener('offline', () => {
+        console.log('[net] offline');
+      });
+    </script>
   </body>
 </html>

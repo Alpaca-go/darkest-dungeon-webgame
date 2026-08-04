@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a0f0a" />
+      <stop offset="100%" stop-color="#0a0506" />
+    </linearGradient>
+    <linearGradient id="blade" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#d4c298" />
+      <stop offset="100%" stop-color="#8b1e1e" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)" rx="64" />
+  <g transform="translate(256 256)">
+    <!-- 中心十字剑 -->
+    <rect x="-12" y="-160" width="24" height="280" fill="url(#blade)" rx="4" />
+    <rect x="-100" y="-12" width="200" height="24" fill="url(#blade)" rx="4" />
+    <!-- 剑柄 -->
+    <rect x="-8" y="120" width="16" height="40" fill="#3a2818" rx="2" />
+    <circle cx="0" cy="170" r="14" fill="#c9a55a" />
+    <!-- 周围装饰圆环 -->
+    <circle cx="0" cy="0" r="180" fill="none" stroke="#3a2818" stroke-width="2" opacity="0.6" />
+    <circle cx="0" cy="0" r="140" fill="none" stroke="#5a3818" stroke-width="1" opacity="0.4" />
+  </g>
+  <!-- 角落 4 个火把 -->
+  <g fill="#c9a55a" opacity="0.6">
+    <circle cx="64" cy="64" r="6" />
+    <circle cx="448" cy="64" r="6" />
+    <circle cx="64" cy="448" r="6" />
+    <circle cx="448" cy="448" r="6" />
+  </g>
+</svg>

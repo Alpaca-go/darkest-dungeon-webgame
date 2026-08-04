@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <title>离线模式 - 暗域远征</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: #0a0a0a;
+        color: #e0d6c2;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        line-height: 1.6;
+      }
+      .container {
+        max-width: 480px;
+        width: 100%;
+        text-align: center;
+      }
+      h1 {
+        font-size: 1.5rem;
+        color: #c9a55a;
+        margin-bottom: 16px;
+      }
+      p {
+        font-size: 1rem;
+        margin-bottom: 16px;
+        color: #b0a890;
+      }
+      .icon {
+        font-size: 4rem;
+        margin-bottom: 24px;
+        display: block;
+      }
+      .notice {
+        background: #1a1410;
+        border: 1px solid #3a2818;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 24px 0;
+        font-size: 0.9rem;
+        color: #a09080;
+      }
+      .notice strong {
+        color: #c9a55a;
+      }
+      button {
+        background: #8b1e1e;
+        color: #fff;
+        border: none;
+        padding: 14px 32px;
+        font-size: 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        min-height: 48px;
+        min-width: 48px;
+        font-family: inherit;
+        margin-top: 16px;
+      }
+      button:hover { background: #a52828; }
+      button:active { background: #6b1818; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <span class="icon" aria-hidden="true">⚔</span>
+      <h1>当前处于离线模式</h1>
+      <p>游戏和本地存档仍可使用,但部分网络功能不可用。</p>
+      <div class="notice">
+        <strong>提示:</strong> 已完成自动保存。恢复网络后,内容会同步刷新。
+      </div>
+      <button onclick="window.location.reload()" type="button">
+        重新连接
+      </button>
+    </div>
+  </body>
+</html>
