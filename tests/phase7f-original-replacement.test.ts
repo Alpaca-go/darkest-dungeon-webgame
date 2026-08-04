@@ -70,6 +70,8 @@ describe('Phase 7F: 产品代码无原作专属词(SPEC §26.1)', () => {
     for (const file of files) {
       // 跳过测试文件
       if (file.includes('test') || file.includes('spec')) continue;
+      // 跳过 content-audit.ts (本身含 ORIGINAL_HERO_NAMES 用于审计)
+      if (file.includes('content-audit')) continue;
       const text = readFileSync(file, 'utf-8');
       const lower = text.toLowerCase();
       for (const word of HIGH_IDENTITY_WORDS) {

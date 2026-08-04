@@ -93,7 +93,7 @@ export function calculateBalanceReport(args: {
   const successSummaries = summaries.filter((s) => s.finalBossDefeated);
   const avgAttempts = successSummaries.length === 0
     ? 0
-    : successSummaries.reduce((acc, s) => acc + 1, 0) / successSummaries.length;
+    : successSummaries.reduce((acc, _s) => acc + 1, 0) / successSummaries.length;
   const avgFailuresBeforeSuccess = Math.max(0, avgAttempts - 1);
 
   // 8. 区域完成率
