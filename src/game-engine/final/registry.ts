@@ -303,6 +303,436 @@ export const FINAL_CAMP_ACTIVITIES: Record<string, FinalCampActivity> = {
 };
 
 // =====================================================================
+// 最终区域敌人(SPEC §8)
+// =====================================================================
+
+export interface FinalRegionEnemy {
+  id: string;
+  name: string;
+  tier: 'normal' | 'elite';
+  description: string;
+  /** 主要威胁标签 */
+  threatTags: string[];
+  /** 核心机制 */
+  mechanics: string;
+}
+
+// 4 普通敌人(SPEC §8)
+export const FINAL_ENEMIES: Record<string, FinalRegionEnemy> = {
+  'enemy-memory-devourer': {
+    id: 'enemy-memory-devourer',
+    name: '记忆吞噬者',
+    tier: 'normal',
+    description: '吞噬英雄记忆的扭曲存在,使玩家失去英雄历史信息,封锁与英雄经验相关的选择。',
+    threatTags: ['memory-loss', 'stress', 'history-block'],
+    mechanics: '本场战斗禁用依赖英雄历史/老兵状态的选项(英雄个体考验限制)',
+  },
+  'enemy-lightless-apostle': {
+    id: 'enemy-lightless-apostle',
+    name: '无光使徒',
+    tier: 'normal',
+    description: '祖先的盲目仆从,削弱火把并强化未知风险。',
+    threatTags: ['torch-down', 'mystery', 'darkness'],
+    mechanics: '火把每轮 -5,未知风险 +20%(陷阱概率翻倍)',
+  },
+  'enemy-corrupt-warden': {
+    id: 'enemy-corrupt-warden',
+    name: '腐化守门者',
+    tier: 'normal',
+    description: '混合流血、腐蚀与防御的重甲守卫,污染过的铠甲仍会流出黑色脓液。',
+    threatTags: ['bleed', 'corrupt', 'defense'],
+    mechanics: '对前排造成 8 HP + 3 轮流血,后排 +2 腐蚀',
+  },
+  'enemy-disorder-shadow': {
+    id: 'enemy-disorder-shadow',
+    name: '失序之影',
+    tier: 'normal',
+    description: '打乱站位并干扰主要执行者,折射的空间让英雄无法保持阵型。',
+    threatTags: ['position-break', 'formation-disrupt'],
+    mechanics: '前排后排位置每轮随机互换 1 次,主要执行者(高伤英雄)被锁定 1 轮',
+  },
+  // 2 精英敌人(SPEC §8)
+  'enemy-abyss-magistrate': {
+    id: 'enemy-abyss-magistrate',
+    name: '深渊执政官',
+    tier: 'elite',
+    description: '高压力、召唤和环境强化的精英,会以环境亡灵仪式反制玩家。',
+    threatTags: ['stress', 'summon', 'environment'],
+    mechanics: '对全员 +10 压力;每 2 轮召唤 1 个失序之影;强化环境目标 HP 30%',
+  },
+  'enemy-final-hunter': {
+    id: 'enemy-final-hunter',
+    name: '终末猎手',
+    tier: 'elite',
+    description: '集中攻击 Death\'s Door 英雄,无差别斩杀濒死者,不会放过任何倒下的灵魂。',
+    threatTags: ['deaths-door-target', 'execute'],
+    mechanics: '优先攻击 HP < 25% 英雄,造成 15 HP + 1 轮流血;若目标已在 Death\'s Door,直接结算 Deathblow(50% 概率)',
+  },
+};
+
+// =====================================================================
+// 最终区域奇物(SPEC §8)
+// =====================================================================
+
+export interface FinalRegionCurio {
+  id: string;
+  name: string;
+  description: string;
+  /** 可选选项(每个奇物 2-3 个) */
+  options: { id: string; title: string; description: string; riskTags: string[] }[];
+}
+
+// 4 奇物(SPEC §8)
+export const FINAL_CURIOS: Record<string, FinalRegionCurio> = {
+  'curio-darkest-memorial': {
+    id: 'curio-darkest-memorial',
+    name: '英雄纪念碑',
+    description: '刻满 Phase 1-6 牺牲英雄名字的石碑。交互可触发回忆事件,获得祝福或承受悲伤。',
+    options: [
+      {
+        id: 'memorial-read',
+        title: '阅读名字,缅怀牺牲',
+        description: '降低全队压力 5;若墓园英雄 ≥ 3,额外 +1 正面怪癖持续 1 周',
+        riskTags: ['stress-down', 'positive-quirk'],
+      },
+      {
+        id: 'memorial-pray',
+        title: '在碑前祈祷',
+        description: '获得「先祖保佑」buff:下一场战斗全员 +5% 命中率;若墓园英雄 = 0,无效果',
+        riskTags: ['combat-buff'],
+      },
+      {
+        id: 'memorial-skip',
+        title: '不打扰他们',
+        description: '无效果,但保护墓地不被打扰',
+        riskTags: ['safe'],
+      },
+    ],
+  },
+  'curio-darkest-banner': {
+    id: 'curio-darkest-banner',
+    name: '破碎战旗',
+    description: '三个区域 Boss 战斗留下的破碎战旗残骸。',
+    options: [
+      {
+        id: 'banner-mend',
+        title: '缝补战旗',
+        description: '消耗绷带 1,获得 +1 抗压(下 3 场战斗压力 -20%)',
+        riskTags: ['consume-item', 'stress-resist'],
+      },
+      {
+        id: 'banner-burn',
+        title: '焚烧战旗',
+        description: '压力 +3,但火光照亮前方路线,清除当前节点所有陷阱',
+        riskTags: ['stress-up', 'reveal-traps'],
+      },
+      {
+        id: 'banner-take',
+        title: '收下战旗',
+        description: '作为最终讨伐纪念物,不消耗也不生效',
+        riskTags: ['safe'],
+      },
+    ],
+  },
+  'curio-darkest-shrine': {
+    id: 'curio-darkest-shrine',
+    name: '无光圣龛',
+    description: '献给先祖之罪的祭坛,无光但散发微弱的祖先祝福。',
+    options: [
+      {
+        id: 'shrine-bless',
+        title: '接受祝福',
+        description: '下一场战斗 +10% 暴击;但若队伍有折磨怪癖,压力 +5',
+        riskTags: ['crit-buff', 'risk-stress'],
+      },
+      {
+        id: 'shrine-destroy',
+        title: '摧毁圣龛',
+        description: '压力 -3;摧毁后此节点不再触发圣龛(一次性)',
+        riskTags: ['stress-down', 'permanent-removal'],
+      },
+      {
+        id: 'shrine-ignore',
+        title: '绕过圣龛',
+        description: '不打扰先祖',
+        riskTags: ['safe'],
+      },
+    ],
+  },
+  'curio-darkest-memory': {
+    id: 'curio-darkest-memory',
+    name: '封存记忆',
+    description: '玻璃瓶中保存着一段被封存的英雄记忆,可能是力量也可能是诅咒。',
+    options: [
+      {
+        id: 'memory-open',
+        title: '打开封存',
+        description: '随机获得 +1 正面怪癖(50%) 或 +1 负面怪癖(50%)',
+        riskTags: ['gamble-quirk'],
+      },
+      {
+        id: 'memory-save',
+        title: '封存带走',
+        description: '可在最终露营时使用,稳定一次英雄个体考验失败',
+        riskTags: ['save-for-late'],
+      },
+      {
+        id: 'memory-leave',
+        title: '原样放回',
+        description: '无效果',
+        riskTags: ['safe'],
+      },
+    ],
+  },
+};
+
+// =====================================================================
+// 最终区域陷阱(SPEC §8)
+// =====================================================================
+
+export interface FinalRegionTrap {
+  id: string;
+  name: string;
+  description: string;
+  /** 触发伤害 */
+  damage: number;
+  /** 触发状态 */
+  statusEffect: { kind: string; amount: number; target: 'front-rank' | 'all-alive' };
+  /** 检测难度 0-100(技能检查阈值) */
+  detectDifficulty: number;
+  /** 解除难度 */
+  disarmDifficulty: number;
+}
+
+// 3 陷阱(SPEC §8)
+export const FINAL_TRAPS: Record<string, FinalRegionTrap> = {
+  'trap-darkest-fault': {
+    id: 'trap-darkest-fault',
+    name: '记忆断层',
+    description: '时空裂隙,英雄会短暂失去方向感并损失 HP。',
+    damage: 8,
+    statusEffect: { kind: 'apply-stress', amount: 8, target: 'all-alive' },
+    detectDifficulty: 60,
+    disarmDifficulty: 50,
+  },
+  'trap-darkest-rift': {
+    id: 'trap-darkest-rift',
+    name: '无光裂隙',
+    description: '完全无光的深渊裂缝,前排直接掉血并压力。',
+    damage: 12,
+    statusEffect: { kind: 'apply-stress', amount: 6, target: 'all-alive' },
+    detectDifficulty: 70,
+    disarmDifficulty: 65,
+  },
+  'trap-darkest-seal': {
+    id: 'trap-darkest-seal',
+    name: '逆转封印',
+    description: '激活后会倒转 1 个已被摧毁的封印效果(本场战斗)。',
+    damage: 4,
+    statusEffect: { kind: 'revert-seal', amount: 1, target: 'all-alive' },
+    detectDifficulty: 80,
+    disarmDifficulty: 75,
+  },
+};
+
+// =====================================================================
+// 最终区域路线(SPEC §7)
+// =====================================================================
+
+export interface FinalRegionRouteNode {
+  id: string;
+  index: number;
+  type: 'start' | 'encounter' | 'elite' | 'curio' | 'camp' | 'fork' | 'objective' | 'trap';
+  name: string;
+  description: string;
+  /** 分叉选项 */
+  forkOptions?: { id: string; label: string; nextNodeId: string; riskTags: string[] }[];
+  /** 关联内容 id(敌人/奇物/陷阱/Boss) */
+  contentIds?: string[];
+}
+
+export interface FinalRegionRoute {
+  id: string;
+  regionId: string;
+  /** 总节点数(16-20) */
+  totalNodes: number;
+  /** 关键节点配置 */
+  nodes: FinalRegionRouteNode[];
+  /** 露营节点索引(至少 1) */
+  campNodeIndices: number[];
+  /** 重大背包取舍节点 */
+  tradeoffNodeIndices: number[];
+  /** 不可逆选择节点 */
+  irreversibleNodeIndices: number[];
+  /** 撤退判断节点 */
+  retreatDecisionNodeIndices: number[];
+  /** 最终 Boss 准备节点 */
+  bossPrepNodeIndex: number;
+}
+
+// 最终讨伐路线(16-20 节点,SPEC §7)
+export const FINAL_ROUTE: FinalRegionRoute = {
+  id: 'route-darkest-core-final',
+  regionId: 'darkest-core',
+  totalNodes: 20,
+  nodes: [
+    { id: 'fn-0', index: 0, type: 'start', name: '无光之门入口', description: '通往黑暗核心的入口,先祖的阴影在前方等待。' },
+    { id: 'fn-1', index: 1, type: 'encounter', name: '失序之影伏击', description: '第一波敌人,失序之影的先头部队。', contentIds: ['enemy-disorder-shadow'] },
+    { id: 'fn-2', index: 2, type: 'curio', name: '英雄纪念碑', description: '碑上刻有第一个牺牲英雄的名字。', contentIds: ['curio-darkest-memorial'] },
+    { id: 'fn-3', index: 3, type: 'fork', name: '三岔路', description: '通向三个区域机制的路径分流。',
+      forkOptions: [
+        { id: 'fork-stress', label: '压力之路(诅咒封印方向)', nextNodeId: 'fn-4-stress', riskTags: ['stress-heavy'] },
+        { id: 'fork-disease', label: '腐蚀之路(疾病封印方向)', nextNodeId: 'fn-4-disease', riskTags: ['disease-risk'] },
+        { id: 'fork-hunger', label: '饥饿之路(流血封印方向)', nextNodeId: 'fn-4-hunger', riskTags: ['hunger-bleed'] },
+      ] },
+    { id: 'fn-4-stress', index: 4, type: 'elite', name: '无光使徒首领', description: '精英敌人,削弱火把并强化未知。', contentIds: ['enemy-lightless-apostle'] },
+    { id: 'fn-4-disease', index: 4, type: 'elite', name: '腐化守门者', description: '精英敌人,混合流血与腐蚀。', contentIds: ['enemy-corrupt-warden'] },
+    { id: 'fn-4-hunger', index: 4, type: 'elite', name: '记忆吞噬者', description: '精英敌人,封锁英雄历史选项。', contentIds: ['enemy-memory-devourer'] },
+    { id: 'fn-5', index: 5, type: 'encounter', name: '深渊执政官', description: '第一次遇见精英执政官,会召失序之影。', contentIds: ['enemy-abyss-magistrate'] },
+    { id: 'fn-6', index: 6, type: 'curio', name: '破碎战旗', description: 'Boss 战留下的战旗。', contentIds: ['curio-darkest-banner'] },
+    { id: 'fn-7', index: 7, type: 'trap', name: '无光裂隙', description: '高伤害陷阱,需要技能检查解除。', contentIds: ['trap-darkest-rift'] },
+    { id: 'fn-8', index: 8, type: 'camp', name: '最终露营前哨', description: '外层穿越的中途露营,SPEC §10 5 个活动全部可用。' },
+    { id: 'fn-9', index: 9, type: 'encounter', name: '无光使徒群', description: '群体敌人,火把 -50%。', contentIds: ['enemy-lightless-apostle'] },
+    { id: 'fn-10', index: 10, type: 'curio', name: '无光圣龛', description: '祖先祭坛。', contentIds: ['curio-darkest-shrine'] },
+    { id: 'fn-11', index: 11, type: 'encounter', name: '终末猎手', description: '精英猎手,专攻 Death\'s Door 英雄。', contentIds: ['enemy-final-hunter'] },
+    { id: 'fn-12', index: 12, type: 'trap', name: '记忆断层', description: '中等伤害,压力 +8。', contentIds: ['trap-darkest-fault'] },
+    { id: 'fn-13', index: 13, type: 'curio', name: '封存记忆', description: '玻璃瓶记忆。', contentIds: ['curio-darkest-memory'] },
+    { id: 'fn-14', index: 14, type: 'fork', name: '撤退判断', description: '最后一次撤退窗口(若继续则不可逆)。' },
+    { id: 'fn-15', index: 15, type: 'trap', name: '逆转封印', description: '高难度陷阱,可能倒转 1 封印。', contentIds: ['trap-darkest-seal'] },
+    { id: 'fn-16', index: 16, type: 'encounter', name: '深渊执政官 x2', description: '最后精英,两个执政官。', contentIds: ['enemy-abyss-magistrate'] },
+    { id: 'fn-17', index: 17, type: 'objective', name: 'Boss 准备节点', description: '最终讨伐前准备:队伍确认 + 补给确认 + 风险提示。' },
+    // 最终 Boss 在 fn-17 之后,作为 route 的最后一个节点
+  ],
+  campNodeIndices: [8],
+  tradeoffNodeIndices: [6, 10, 13], // 3 次重大背包取舍
+  irreversibleNodeIndices: [3, 14, 19], // 3 个不可逆选择
+  retreatDecisionNodeIndices: [14], // 最后撤退窗口
+  bossPrepNodeIndex: 19,
+};
+
+// =====================================================================
+// 英雄个体考验(SPEC §12)
+// =====================================================================
+
+import type { HeroTrialDefinition } from './types.js';
+
+export const HERO_TRIALS: Record<string, HeroTrialDefinition> = {
+  'trial-veteran-sacrifice': {
+    id: 'trial-veteran-sacrifice',
+    name: '老兵的牺牲',
+    description: '让老兵(墓园 ≥ 2 死亡 / 经历 ≥ 3 Boss 战)承担核心任务,承受本场全部压力。',
+    eligibleHeroConditions: [
+      { kind: 'flag-gte', flagName: 'hero_veteran_count', value: 1 },
+    ],
+    generatedChoiceRules: [
+      {
+        id: 'trial-veteran-accept',
+        title: '接受核心任务',
+        description: '老兵承担核心位置,本场 +20 压力但全队其他人 -50% 压力',
+        successEffects: [
+          { kind: 'apply-stress', amount: 20, heroSelector: 'specific' },
+          { kind: 'apply-stress', amount: -10, heroSelector: 'all-alive' },
+        ],
+        failureEffects: [
+          { kind: 'apply-stress', amount: 35, heroSelector: 'specific' },
+        ],
+        riskTags: ['high-stress', 'protect-others'],
+      },
+    ],
+    successEffects: [
+      { kind: 'apply-stress', amount: 20, heroSelector: 'specific' },
+    ],
+    failureEffects: [
+      { kind: 'apply-stress', amount: 35, heroSelector: 'specific' },
+    ],
+  },
+  'trial-newcomer-guard': {
+    id: 'trial-newcomer-guard',
+    name: '新人守护',
+    description: '老兵保护新人,本场新人不会受到单次 > 15 HP 的伤害。',
+    eligibleHeroConditions: [
+      { kind: 'flag-gte', flagName: 'hero_party_count', value: 2 },
+    ],
+    generatedChoiceRules: [
+      {
+        id: 'trial-newcomer-guard-accept',
+        title: '老兵承担保护',
+        description: '老兵分担新人伤害;老兵 -10% 最大 HP,新人安全',
+        successEffects: [
+          { kind: 'set-flag', flagName: 'hero_guard_active', flagValue: 1 },
+        ],
+        failureEffects: [
+          { kind: 'apply-stress', amount: 10, heroSelector: 'all-alive' },
+        ],
+        riskTags: ['protect-newcomer'],
+      },
+    ],
+    successEffects: [
+      { kind: 'set-flag', flagName: 'hero_guard_active', flagValue: 1 },
+    ],
+    failureEffects: [
+      { kind: 'apply-stress', amount: 10, heroSelector: 'all-alive' },
+    ],
+  },
+  'trial-trinket-sacrifice': {
+    id: 'trial-trinket-sacrifice',
+    name: '饰品献祭',
+    description: '消耗 1 个已装备饰品,换取本阶段全队 +20% 命中率。',
+    eligibleHeroConditions: [
+      { kind: 'flag-gte', flagName: 'hero_equipped_trinket_count', value: 1 },
+    ],
+    generatedChoiceRules: [
+      {
+        id: 'trial-trinket-sacrifice-accept',
+        title: '献祭饰品',
+        description: '失去 1 饰品,但本阶段全队 +20% 命中',
+        successEffects: [
+          { kind: 'set-flag', flagName: 'phase_accuracy_bonus', flagValue: 20 },
+        ],
+        failureEffects: [
+          { kind: 'set-flag', flagName: 'phase_accuracy_penalty', flagValue: 10 },
+        ],
+        riskTags: ['lose-trinket', 'accuracy-buff'],
+      },
+    ],
+    successEffects: [
+      { kind: 'set-flag', flagName: 'phase_accuracy_bonus', flagValue: 20 },
+    ],
+    failureEffects: [
+      { kind: 'set-flag', flagName: 'phase_accuracy_penalty', flagValue: 10 },
+    ],
+  },
+  'trial-quirk-sacrifice': {
+    id: 'trial-quirk-sacrifice',
+    name: '怪癖献祭',
+    description: '让有负面怪癖的英雄承担关键任务,失败时负面怪癖消失但压力 +20。',
+    eligibleHeroConditions: [
+      { kind: 'flag-gte', flagName: 'hero_negative_quirk_count', value: 1 },
+    ],
+    generatedChoiceRules: [
+      {
+        id: 'trial-quirk-accept',
+        title: '怪癖英雄承担',
+        description: '成功:负面怪癖移除 + 获得 1 正面怪癖;失败:压力 +20',
+        successEffects: [
+          { kind: 'set-flag', flagName: 'quirk_cleansed', flagValue: 1 },
+        ],
+        failureEffects: [
+          { kind: 'apply-stress', amount: 20, heroSelector: 'specific' },
+        ],
+        riskTags: ['quirk-sacrifice', 'high-pressure'],
+      },
+    ],
+    successEffects: [
+      { kind: 'set-flag', flagName: 'quirk_cleansed', flagValue: 1 },
+    ],
+    failureEffects: [
+      { kind: 'apply-stress', amount: 20, heroSelector: 'specific' },
+    ],
+  },
+};
+
+// =====================================================================
 // 初始化 helpers(SPEC §28)
 // =====================================================================
 
