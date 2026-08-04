@@ -41,3 +41,33 @@ export {
   createEmptyBossCampaignState,
   type BossReducerResult,
 } from './state-machine.js';
+export {
+  stateFromThreatValue,
+  clampThreatValue,
+  createEmptyRegionThreat,
+  applyThreatDelta,
+  applyBossDefeatThreatReduction,
+  advanceWeek,
+  applyQuestSuccess,
+  applyQuestFailure,
+  applyInvestigationComplete,
+  applyWeakeningComplete,
+  isThreatValid,
+} from './threat.js';
+export {
+  generateBossTacticalOptions,
+  applyIntelligenceUnlock,
+  applyWeakening,
+  removeWeakening,
+  type BossChoiceContext,
+} from './choice-generator.js';
+export {
+  initBossEncounter,
+  advanceRound,
+  checkPhaseTransition,
+  calcRetreatSuccessRate,
+  applyRetreatSuccess,
+  applyRetreatFailure,
+  applyVictory,
+  applyFailure,
+} from './encounter-resolver.js';
