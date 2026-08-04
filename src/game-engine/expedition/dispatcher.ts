@@ -294,6 +294,66 @@ function applyCommand(ctx: ExpeditionContext, command: GameCommand): void {
       return; // 简化:无操作
     case 'DEBUG_EXPORT_REGION_PACKAGE':
       return; // 简化:无操作
+    // Phase 6 Boss 业务命令(SPEC §24)
+    case 'START_BOSS_INVESTIGATION':
+      return cmdStartBossInvestigation(ctx, command.bossId, command.commandId);
+    case 'GRANT_BOSS_INTELLIGENCE':
+      return cmdGrantBossIntelligence(ctx, command.bossId, command.entryId, command.commandId);
+    case 'COMPLETE_BOSS_INVESTIGATION_QUEST':
+      return cmdCompleteBossInvestigationQuest(ctx, command.questId, command.commandId);
+    case 'COMPLETE_BOSS_WEAKENING_QUEST':
+      return cmdCompleteBossWeakeningQuest(ctx, command.questId, command.commandId);
+    case 'UNLOCK_BOSS_HUNT':
+      return cmdUnlockBossHunt(ctx, command.bossId, command.commandId);
+    case 'START_BOSS_FINAL_QUEST':
+      return cmdStartBossFinalQuest(ctx, command.bossId, command.commandId);
+    case 'ENTER_BOSS_ENCOUNTER':
+      return cmdEnterBossEncounter(ctx, command.bossId, command.commandId);
+    case 'SELECT_BOSS_TACTICAL_OPTION':
+      return cmdSelectBossTacticalOption(ctx, command.decisionId, command.choiceId, command.commandId);
+    case 'RESOLVE_BOSS_PHASE_TRANSITION':
+      return cmdResolveBossPhaseTransition(ctx, command.bossId, command.commandId);
+    case 'INTERACT_BOSS_ENVIRONMENT_TARGET':
+      return cmdInteractBossEnvironmentTarget(ctx, command.targetId, command.choiceId, command.commandId);
+    case 'ATTEMPT_BOSS_RETREAT':
+      return cmdAttemptBossRetreat(ctx, command.bossId, command.commandId);
+    case 'RESOLVE_BOSS_DEFEAT':
+      return cmdResolveBossDefeat(ctx, command.bossId, command.commandId);
+    case 'RESOLVE_BOSS_FAILURE':
+      return cmdResolveBossFailure(ctx, command.bossId, command.commandId);
+    // Phase 6 Boss 调试(SPEC §39)
+    case 'DEBUG_SET_REGION_THREAT':
+      return cmdDebugSetRegionThreat(ctx, command.regionId, command.value, command.commandId);
+    case 'DEBUG_SET_REGION_THREAT_STATE':
+      return cmdDebugSetRegionThreatState(ctx, command.regionId, command.state, command.commandId);
+    case 'DEBUG_SET_BOSS_STATUS':
+      return cmdDebugSetBossStatus(ctx, command.bossId, command.status, command.commandId);
+    case 'DEBUG_GRANT_BOSS_INTELLIGENCE':
+      return cmdDebugGrantBossIntelligence(ctx, command.bossId, command.entryId, command.commandId);
+    case 'DEBUG_REMOVE_BOSS_INTELLIGENCE':
+      return cmdDebugRemoveBossIntelligence(ctx, command.bossId, command.entryId, command.commandId);
+    case 'DEBUG_COMPLETE_BOSS_QUEST':
+      return cmdDebugCompleteBossQuest(ctx, command.questId, command.commandId);
+    case 'DEBUG_ADD_BOSS_WEAKENING':
+      return cmdDebugAddBossWeakening(ctx, command.bossId, command.weakeningId, command.commandId);
+    case 'DEBUG_REMOVE_BOSS_WEAKENING':
+      return cmdDebugRemoveBossWeakening(ctx, command.bossId, command.weakeningId, command.commandId);
+    case 'DEBUG_UNLOCK_BOSS_HUNT':
+      return cmdUnlockBossHunt(ctx, command.bossId, command.commandId);
+    case 'DEBUG_JUMP_BOSS_PHASE':
+      return cmdDebugJumpBossPhase(ctx, command.bossId, command.phaseIndex, command.commandId);
+    case 'DEBUG_SET_BOSS_HP':
+      return cmdDebugSetBossHp(ctx, command.bossId, command.value, command.commandId);
+    case 'DEBUG_FORCE_BOSS_SUMMON':
+      return; // 简化:6B 实现
+    case 'DEBUG_FORCE_BOSS_PHASE_TRANSITION':
+      return cmdResolveBossPhaseTransition(ctx, command.bossId, command.commandId);
+    case 'DEBUG_FORCE_BOSS_RETREAT':
+      return cmdDebugForceBossRetreat(ctx, command.bossId, command.success, command.commandId);
+    case 'DEBUG_FORCE_BOSS_DEFEAT':
+      return cmdResolveBossDefeat(ctx, command.bossId, command.commandId);
+    case 'DEBUG_RESET_BOSS_STATE':
+      return cmdDebugResetBossState(ctx, command.bossId, command.commandId);
   }
 }
 
@@ -1810,4 +1870,411 @@ function cmdDebugForceRegionQuest(
 ): void {
   void _commandId;
   cmdGenerateRegionQuest(ctx, regionId, 'medium', _commandId);
+}
+
+// =====================================================================
+// Phase 6 Boss 集成(SPEC §24 §26 §39)
+// =====================================================================
+
+import type { BossId, BossStatus, BossCampaignState, RegionThreatState, RegionThreatProgress, CampaignThreatState } from '../boss/types.js';
+import { BOSS_DEFINITIONS, BOSS_TASKS, initializeBossStates, initializeRegionThreats, createEmptyCampaignThreat } from '../boss/registry.js';
+import {
+  startInvestigation as smStartInvestigation,
+  grantIntelligence as smGrantIntelligence,
+  completeInvestigationQuest as smCompleteInvestigationQuest,
+  completeWeakeningQuest as smCompleteWeakeningQuest,
+  unlockBossHunt as smUnlockBossHunt,
+  startFinalQuest as smStartFinalQuest,
+  resolvePhaseTransition as smResolvePhaseTransition,
+  resolveDefeat as smResolveDefeat,
+  resolveFailure as smResolveFailure,
+  attemptRetreat as smAttemptRetreat,
+} from '../boss/state-machine.js';
+import {
+  applyThreatDelta as thrApplyThreatDelta,
+  applyBossDefeatThreatReduction as thrApplyBossDefeatThreatReduction,
+} from '../boss/threat.js';
+
+// ---------- lazy ensure helpers ----------
+
+function ensureBossStates(campaign: CampaignState): Record<string, BossCampaignState> {
+  if (!campaign.bossStates) {
+    campaign.bossStates = initializeBossStates();
+  }
+  return campaign.bossStates;
+}
+
+function ensureRegionThreats(campaign: CampaignState): Record<string, RegionThreatProgress> {
+  if (!campaign.regionThreats) {
+    const t = initializeRegionThreats();
+    campaign.regionThreats = t as Record<string, RegionThreatProgress>;
+  }
+  return campaign.regionThreats;
+}
+
+function ensureCampaignThreat(campaign: CampaignState): CampaignThreatState {
+  if (!campaign.campaignThreat) {
+    campaign.campaignThreat = createEmptyCampaignThreat();
+  }
+  return campaign.campaignThreat;
+}
+
+/** 一次性初始化所有 boss 相关字段(任何 boss 命令开头调用) */
+function ensureAllBossState(campaign: CampaignState): void {
+  ensureBossStates(campaign);
+  ensureRegionThreats(campaign);
+  ensureCampaignThreat(campaign);
+}
+
+function getBossOrThrow(campaign: CampaignState, bossId: BossId): BossCampaignState {
+  const states = ensureBossStates(campaign);
+  const boss = states[bossId];
+  if (!boss) throw new Error(`unknown boss: ${bossId}`);
+  return boss;
+}
+
+// ---------- Boss 业务命令(SPEC §24) ----------
+
+function cmdStartBossInvestigation(ctx: ExpeditionContext, bossId: BossId, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  ensureAllBossState(ctx.state.campaign);
+  const states = ensureBossStates(ctx.state.campaign);
+  const boss = getBossOrThrow(ctx.state.campaign, bossId);
+  const r = smStartInvestigation(boss);
+  if (r.errors.length > 0) throw new Error(r.errors.join('; '));
+  states[bossId] = r.state;
+  for (const ev of r.events) {
+    if (ev === 'BossRumorDiscovered') {
+      ctx.emit('BOSS_RUMOR_DISCOVERED', { bossId, regionId: boss.regionId });
+    }
+  }
+}
+
+function cmdGrantBossIntelligence(ctx: ExpeditionContext, bossId: BossId, entryId: string, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const states = ensureBossStates(ctx.state.campaign);
+  const boss = getBossOrThrow(ctx.state.campaign, bossId);
+  const r = smGrantIntelligence(boss, entryId);
+  if (r.errors.length > 0) throw new Error(r.errors.join('; '));
+  states[bossId] = r.state;
+  ctx.emit('BOSS_INTELLIGENCE_GRANTED', { bossId, entryId });
+}
+
+function cmdCompleteBossInvestigationQuest(ctx: ExpeditionContext, questId: string, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const task = BOSS_TASKS[questId];
+  if (!task) throw new Error(`unknown boss task: ${questId}`);
+  const states = ensureBossStates(ctx.state.campaign);
+  const boss = getBossOrThrow(ctx.state.campaign, task.bossId);
+  const r = smCompleteInvestigationQuest(boss, questId);
+  if (r.errors.length > 0) throw new Error(r.errors.join('; '));
+  states[task.bossId] = r.state;
+  ctx.emit('BOSS_INVESTIGATION_QUEST_COMPLETED', { bossId: task.bossId, questId });
+}
+
+function cmdCompleteBossWeakeningQuest(ctx: ExpeditionContext, questId: string, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const task = BOSS_TASKS[questId];
+  if (!task) throw new Error(`unknown boss task: ${questId}`);
+  const states = ensureBossStates(ctx.state.campaign);
+  const boss = getBossOrThrow(ctx.state.campaign, task.bossId);
+  const r = smCompleteWeakeningQuest(boss, questId);
+  if (r.errors.length > 0) throw new Error(r.errors.join('; '));
+  states[task.bossId] = r.state;
+  // 每个 granted weakening 单独 emit
+  for (const wid of task.grantsIds) {
+    ctx.emit('BOSS_WEAKENING_EFFECT_APPLIED', { bossId: task.bossId, weakeningId: wid });
+  }
+  ctx.emit('BOSS_WEAKENING_QUEST_COMPLETED', { bossId: task.bossId, questId, weakeningId: task.grantsIds[0] ?? '' });
+  if (r.state.status === 'hunt-ready') {
+    ctx.emit('BOSS_HUNT_UNLOCKED', { bossId: task.bossId });
+  }
+}
+
+function cmdUnlockBossHunt(ctx: ExpeditionContext, bossId: BossId, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const states = ensureBossStates(ctx.state.campaign);
+  const boss = getBossOrThrow(ctx.state.campaign, bossId);
+  const r = smUnlockBossHunt(boss);
+  if (r.errors.length > 0) throw new Error(r.errors.join('; '));
+  states[bossId] = r.state;
+  ctx.emit('BOSS_HUNT_UNLOCKED', { bossId });
+}
+
+function cmdStartBossFinalQuest(ctx: ExpeditionContext, bossId: BossId, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const states = ensureBossStates(ctx.state.campaign);
+  const boss = getBossOrThrow(ctx.state.campaign, bossId);
+  const r = smStartFinalQuest(boss);
+  if (r.errors.length > 0) throw new Error(r.errors.join('; '));
+  states[bossId] = r.state;
+  ctx.emit('BOSS_FINAL_QUEST_STARTED', { bossId });
+  ctx.emit('BOSS_ENCOUNTER_STARTED', { bossId, phaseIndex: 0 });
+}
+
+function cmdEnterBossEncounter(ctx: ExpeditionContext, bossId: BossId, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const boss = getBossOrThrow(ctx.state.campaign, bossId);
+  ctx.emit('BOSS_ENCOUNTER_STARTED', { bossId, phaseIndex: boss.status === 'active' ? 0 : 0 });
+}
+
+function cmdSelectBossTacticalOption(_ctx: ExpeditionContext, _decisionId: string, _choiceId: string, _commandId: string): void {
+  void _decisionId;
+  void _choiceId;
+  void _commandId;
+  // 6A 简化:实际战术效果由底层 BattleContext 处理;此处只占位。
+}
+
+function cmdResolveBossPhaseTransition(ctx: ExpeditionContext, bossId: BossId, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const boss = getBossOrThrow(ctx.state.campaign, bossId);
+  const currentPhase = boss.status === 'active' ? 0 : 0; // 6A 简化
+  const r = smResolvePhaseTransition(boss, currentPhase + 1);
+  if (r.errors.length > 0) throw new Error(r.errors.join('; '));
+  ctx.emit('BOSS_PHASE_TRANSITIONED', { bossId, fromPhase: currentPhase, toPhase: currentPhase + 1 });
+  ctx.emit('BOSS_PHASE_ENTERED', { bossId, phaseIndex: currentPhase + 1 });
+}
+
+function cmdInteractBossEnvironmentTarget(_ctx: ExpeditionContext, _targetId: string, _choiceId: string, _commandId: string): void {
+  void _ctx;
+  void _targetId;
+  void _choiceId;
+  void _commandId;
+  // 6A 简化:具体效果由底层处理
+}
+
+function cmdAttemptBossRetreat(ctx: ExpeditionContext, bossId: BossId, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const states = ensureBossStates(ctx.state.campaign);
+  const boss = getBossOrThrow(ctx.state.campaign, bossId);
+  const bossDef = BOSS_DEFINITIONS[bossId];
+  if (!bossDef) throw new Error(`unknown boss definition: ${bossId}`);
+  // 6A 简化:60% 成功率(实际由 encounter-resolver 算)
+  const success = false; // 默认失败;具体由 encounter resolver 决定
+  const r = smAttemptRetreat(boss, success);
+  if (r.errors.length > 0) throw new Error(r.errors.join('; '));
+  states[bossId] = r.state;
+  ctx.emit('BOSS_RETREAT_ATTEMPTED', { bossId, attemptCount: r.state.retreatCount });
+  if (success) {
+    ctx.emit('BOSS_RETREAT_SUCCEEDED', { bossId, threatIncrease: bossDef.retreatRules.threatIncrease });
+    // 区域威胁增长
+    const threats = ensureRegionThreats(ctx.state.campaign);
+    const region = boss.regionId;
+    const current = threats[region];
+    if (current) {
+      const before = current.threatValue;
+      const next = thrApplyThreatDelta(current, bossDef.retreatRules.threatIncrease);
+      threats[region] = next;
+      if (next.threatValue !== before) {
+        ctx.emit('REGION_THREAT_CHANGED', { regionId: region, from: before, to: next.threatValue });
+      }
+      if (next.state !== current.state) {
+        ctx.emit('REGION_THREAT_STATE_CHANGED', { regionId: region, from: current.state, to: next.state });
+      }
+    }
+  } else {
+    ctx.emit('BOSS_RETREAT_FAILED', { bossId, attemptCount: r.state.retreatCount });
+  }
+}
+
+function cmdResolveBossDefeat(ctx: ExpeditionContext, bossId: BossId, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const states = ensureBossStates(ctx.state.campaign);
+  const boss = getBossOrThrow(ctx.state.campaign, bossId);
+  const week = ctx.state.campaign.week;
+  const r = smResolveDefeat(boss, week);
+  if (r.errors.length > 0) throw new Error(r.errors.join('; '));
+  states[bossId] = r.state;
+  ctx.emit('BOSS_DEFEATED', { bossId, week });
+  // 永久奖励
+  const bossDef = BOSS_DEFINITIONS[bossId];
+  if (bossDef) {
+    ctx.emit('BOSS_PERMANENT_REWARD_GRANTED', { bossId, rewardId: bossDef.permanentRewardId });
+  }
+  // 区域威胁大幅下降
+  const threats = ensureRegionThreats(ctx.state.campaign);
+  const current = threats[boss.regionId];
+  if (current) {
+    const before = current.threatValue;
+    const next = thrApplyBossDefeatThreatReduction(current, 60);
+    threats[boss.regionId] = next;
+    if (next.threatValue !== before) {
+      ctx.emit('REGION_THREAT_CHANGED', { regionId: boss.regionId, from: before, to: next.threatValue });
+    }
+  }
+  // 战役总进度
+  const ct = ensureCampaignThreat(ctx.state.campaign);
+  if (!ct.defeatedBossIds.includes(bossId)) {
+    ct.defeatedBossIds.push(bossId);
+  }
+  ct.totalBossesDefeated = ct.defeatedBossIds.length;
+  ctx.emit('CAMPAIGN_THREAT_ADVANCED', { defeatedBossId: bossId, totalBossesDefeated: ct.totalBossesDefeated });
+  if (ct.totalBossesDefeated >= 3) {
+    ct.finalCampaignGateReady = true;
+    ctx.emit('FINAL_CAMPAIGN_GATE_MARKED_READY', {});
+  }
+}
+
+function cmdResolveBossFailure(ctx: ExpeditionContext, bossId: BossId, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const states = ensureBossStates(ctx.state.campaign);
+  const boss = getBossOrThrow(ctx.state.campaign, bossId);
+  const r = smResolveFailure(boss);
+  if (r.errors.length > 0) throw new Error(r.errors.join('; '));
+  states[bossId] = r.state;
+  ctx.emit('BOSS_ENCOUNTER_FAILED', { bossId, failedAttemptCount: r.state.failedAttemptCount });
+}
+
+// ---------- Boss 调试(SPEC §39) ----------
+
+function cmdDebugSetRegionThreat(ctx: ExpeditionContext, regionId: string, value: number, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const threats = ensureRegionThreats(ctx.state.campaign);
+  const current = threats[regionId];
+  if (!current) return;
+  const before = current.threatValue;
+  const next = thrApplyThreatDelta(current, value - before);
+  threats[regionId] = next;
+  if (next.threatValue !== before) {
+    ctx.emit('REGION_THREAT_CHANGED', { regionId, from: before, to: next.threatValue });
+  }
+  if (next.state !== current.state) {
+    ctx.emit('REGION_THREAT_STATE_CHANGED', { regionId, from: current.state, to: next.state });
+  }
+}
+
+function cmdDebugSetRegionThreatState(ctx: ExpeditionContext, regionId: string, state: RegionThreatState, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const threats = ensureRegionThreats(ctx.state.campaign);
+  const current = threats[regionId];
+  if (!current) return;
+  threats[regionId] = { ...current, state };
+  ctx.emit('REGION_THREAT_STATE_CHANGED', { regionId, from: current.state, to: state });
+}
+
+function cmdDebugSetBossStatus(ctx: ExpeditionContext, bossId: BossId, status: BossStatus, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  ensureAllBossState(ctx.state.campaign);
+  const states = ensureBossStates(ctx.state.campaign);
+  const boss = getBossOrThrow(ctx.state.campaign, bossId);
+  states[bossId] = { ...boss, status };
+}
+
+function cmdDebugGrantBossIntelligence(ctx: ExpeditionContext, bossId: BossId, entryId: string, _commandId: string): void {
+  void _commandId;
+  cmdGrantBossIntelligence(ctx, bossId, entryId, _commandId);
+}
+
+function cmdDebugRemoveBossIntelligence(ctx: ExpeditionContext, bossId: BossId, entryId: string, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const states = ensureBossStates(ctx.state.campaign);
+  const boss = getBossOrThrow(ctx.state.campaign, bossId);
+  states[bossId] = {
+    ...boss,
+    discoveredIntelligenceEntryIds: boss.discoveredIntelligenceEntryIds.filter((id) => id !== entryId),
+    intelligenceProgress: Math.max(0, boss.intelligenceProgress - 1),
+  };
+}
+
+function cmdDebugCompleteBossQuest(ctx: ExpeditionContext, questId: string, _commandId: string): void {
+  void _commandId;
+  const task = BOSS_TASKS[questId];
+  if (!task) return;
+  if (task.type === 'investigation') {
+    cmdCompleteBossInvestigationQuest(ctx, questId, _commandId);
+  } else if (task.type === 'weakening') {
+    cmdCompleteBossWeakeningQuest(ctx, questId, _commandId);
+  }
+}
+
+function cmdDebugAddBossWeakening(ctx: ExpeditionContext, bossId: BossId, weakeningId: string, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const states = ensureBossStates(ctx.state.campaign);
+  const boss = getBossOrThrow(ctx.state.campaign, bossId);
+  if (!boss.activeWeakeningEffectIds.includes(weakeningId)) {
+    states[bossId] = {
+      ...boss,
+      activeWeakeningEffectIds: [...boss.activeWeakeningEffectIds, weakeningId],
+    };
+    ctx.emit('BOSS_WEAKENING_EFFECT_APPLIED', { bossId, weakeningId });
+  }
+}
+
+function cmdDebugRemoveBossWeakening(ctx: ExpeditionContext, bossId: BossId, weakeningId: string, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const states = ensureBossStates(ctx.state.campaign);
+  const boss = getBossOrThrow(ctx.state.campaign, bossId);
+  states[bossId] = {
+    ...boss,
+    activeWeakeningEffectIds: boss.activeWeakeningEffectIds.filter((id) => id !== weakeningId),
+  };
+}
+
+function cmdDebugJumpBossPhase(_ctx: ExpeditionContext, _bossId: BossId, _phaseIndex: number, _commandId: string): void {
+  void _ctx;
+  void _bossId;
+  void _phaseIndex;
+  void _commandId;
+  // 6A 简化:phase 跳转由 encounter-resolver 控制
+}
+
+function cmdDebugSetBossHp(_ctx: ExpeditionContext, _bossId: BossId, _value: number, _commandId: string): void {
+  void _ctx;
+  void _bossId;
+  void _value;
+  void _commandId;
+  // 6A 简化:boss HP 由 BossEncounterState 管理
+}
+
+function cmdDebugForceBossRetreat(ctx: ExpeditionContext, bossId: BossId, success: boolean, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const states = ensureBossStates(ctx.state.campaign);
+  const boss = getBossOrThrow(ctx.state.campaign, bossId);
+  const r = smAttemptRetreat(boss, success);
+  if (r.errors.length > 0) throw new Error(r.errors.join('; '));
+  states[bossId] = r.state;
+  ctx.emit('BOSS_RETREAT_ATTEMPTED', { bossId, attemptCount: r.state.retreatCount });
+  if (success) {
+    ctx.emit('BOSS_RETREAT_SUCCEEDED', { bossId, threatIncrease: 15 });
+  } else {
+    ctx.emit('BOSS_RETREAT_FAILED', { bossId, attemptCount: r.state.retreatCount });
+  }
+}
+
+function cmdDebugResetBossState(ctx: ExpeditionContext, bossId: BossId, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const states = ensureBossStates(ctx.state.campaign);
+  const boss = getBossOrThrow(ctx.state.campaign, bossId);
+  states[bossId] = {
+    ...boss,
+    status: 'hidden',
+    intelligenceProgress: 0,
+    discoveredIntelligenceEntryIds: [],
+    completedInvestigationQuestIds: [],
+    completedWeakeningQuestIds: [],
+    activeWeakeningEffectIds: [],
+    failedAttemptCount: 0,
+    retreatCount: 0,
+    unlockedAtWeek: null,
+    defeatedAtWeek: null,
+  };
 }

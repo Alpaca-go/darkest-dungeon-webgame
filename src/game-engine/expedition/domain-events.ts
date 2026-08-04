@@ -161,7 +161,29 @@ export type ExpeditionDomainEventType =
   | 'REGION_RARE_LOOT_UNLOCKED'
   | 'REGION_BOSS_QUEST_MARKED_READY'
   | 'QUEST_MODIFIER_APPLIED'
-  | 'REGION_REWARD_GRANTED';
+  | 'REGION_REWARD_GRANTED'
+  // Phase 6 Boss 事件(SPEC §25)
+  | 'BOSS_RUMOR_DISCOVERED'
+  | 'BOSS_INVESTIGATION_STARTED'
+  | 'BOSS_INTELLIGENCE_GRANTED'
+  | 'BOSS_INVESTIGATION_QUEST_COMPLETED'
+  | 'BOSS_WEAKENING_QUEST_COMPLETED'
+  | 'BOSS_WEAKENING_EFFECT_APPLIED'
+  | 'BOSS_HUNT_UNLOCKED'
+  | 'BOSS_FINAL_QUEST_STARTED'
+  | 'BOSS_ENCOUNTER_STARTED'
+  | 'BOSS_PHASE_TRANSITIONED'
+  | 'BOSS_PHASE_ENTERED'
+  | 'BOSS_RETREAT_ATTEMPTED'
+  | 'BOSS_RETREAT_SUCCEEDED'
+  | 'BOSS_RETREAT_FAILED'
+  | 'BOSS_ENCOUNTER_FAILED'
+  | 'BOSS_DEFEATED'
+  | 'BOSS_PERMANENT_REWARD_GRANTED'
+  | 'REGION_THREAT_CHANGED'
+  | 'REGION_THREAT_STATE_CHANGED'
+  | 'CAMPAIGN_THREAT_ADVANCED'
+  | 'FINAL_CAMPAIGN_GATE_MARKED_READY';
 
 export interface BaseDomainEvent<T extends ExpeditionDomainEventType, P> {
   id: string;
@@ -734,4 +756,26 @@ export type ExpeditionDomainEvent =
   | BaseDomainEvent<'REGION_RARE_LOOT_UNLOCKED', { regionId: string; lootId: string }>
   | BaseDomainEvent<'REGION_BOSS_QUEST_MARKED_READY', { regionId: string }>
   | BaseDomainEvent<'QUEST_MODIFIER_APPLIED', { regionId: string; modifierIds: string[] }>
-  | BaseDomainEvent<'REGION_REWARD_GRANTED', { regionId: string; gold: number; trinketDefId?: string }>;
+  | BaseDomainEvent<'REGION_REWARD_GRANTED', { regionId: string; gold: number; trinketDefId?: string }>
+  // Phase 6 Boss 事件(SPEC §25)
+  | BaseDomainEvent<'BOSS_RUMOR_DISCOVERED', { bossId: string; regionId: string }>
+  | BaseDomainEvent<'BOSS_INVESTIGATION_STARTED', { bossId: string }>
+  | BaseDomainEvent<'BOSS_INTELLIGENCE_GRANTED', { bossId: string; entryId: string }>
+  | BaseDomainEvent<'BOSS_INVESTIGATION_QUEST_COMPLETED', { bossId: string; questId: string }>
+  | BaseDomainEvent<'BOSS_WEAKENING_QUEST_COMPLETED', { bossId: string; questId: string; weakeningId: string }>
+  | BaseDomainEvent<'BOSS_WEAKENING_EFFECT_APPLIED', { bossId: string; weakeningId: string }>
+  | BaseDomainEvent<'BOSS_HUNT_UNLOCKED', { bossId: string }>
+  | BaseDomainEvent<'BOSS_FINAL_QUEST_STARTED', { bossId: string }>
+  | BaseDomainEvent<'BOSS_ENCOUNTER_STARTED', { bossId: string; phaseIndex: number }>
+  | BaseDomainEvent<'BOSS_PHASE_TRANSITIONED', { bossId: string; fromPhase: number; toPhase: number }>
+  | BaseDomainEvent<'BOSS_PHASE_ENTERED', { bossId: string; phaseIndex: number }>
+  | BaseDomainEvent<'BOSS_RETREAT_ATTEMPTED', { bossId: string; attemptCount: number }>
+  | BaseDomainEvent<'BOSS_RETREAT_SUCCEEDED', { bossId: string; threatIncrease: number }>
+  | BaseDomainEvent<'BOSS_RETREAT_FAILED', { bossId: string; attemptCount: number }>
+  | BaseDomainEvent<'BOSS_ENCOUNTER_FAILED', { bossId: string; failedAttemptCount: number }>
+  | BaseDomainEvent<'BOSS_DEFEATED', { bossId: string; week: number }>
+  | BaseDomainEvent<'BOSS_PERMANENT_REWARD_GRANTED', { bossId: string; rewardId: string }>
+  | BaseDomainEvent<'REGION_THREAT_CHANGED', { regionId: string; from: number; to: number }>
+  | BaseDomainEvent<'REGION_THREAT_STATE_CHANGED', { regionId: string; from: string; to: string }>
+  | BaseDomainEvent<'CAMPAIGN_THREAT_ADVANCED', { defeatedBossId: string; totalBossesDefeated: number }>
+  | BaseDomainEvent<'FINAL_CAMPAIGN_GATE_MARKED_READY', {}>;
