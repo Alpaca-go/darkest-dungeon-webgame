@@ -71,6 +71,10 @@ export interface CampaignState {
   regionThreats?: Record<string, import('../boss/types.js').RegionThreatProgress>;
   /** Phase 6:战役总进度 */
   campaignThreat?: import('../boss/types.js').CampaignThreatState;
+  /** Phase 7:最终战役跨周状态(SPEC §4) */
+  finalCampaignState?: import('../final/types.js').FinalCampaignState;
+  /** Phase 7:最终结局(SPEC §14,一次性提交) */
+  campaignEnding?: import('../final/types.js').CampaignEnding | null;
   status: CampaignStatus;
 }
 

@@ -50,7 +50,7 @@ function freshGameState(seed: string = SEED, week: number = 1): GameState {
     status: 'active',
   };
   return {
-    version: 6,
+    version: 7,
     mode: 'hamlet-overview',
     seed,
     expedition: {

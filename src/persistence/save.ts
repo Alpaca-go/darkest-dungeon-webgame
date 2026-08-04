@@ -1,8 +1,8 @@
 /**
- * 存档(Phase 4 P4.5)
+ * 存档(Phase 4 P4.5 + Phase 6 + Phase 7)
  *
  * 持久化:
- * - 完整 GameState(v4,含 Phase 4 怪癖/疾病/饰品/成长/露营)
+ * - 完整 GameState(v7,含 Phase 7 最终战役字段)
  * - 当前 Seed
  * - UI 设置
  *
@@ -15,27 +15,35 @@
  * - 事件日志
  * - Phase 3:周数 / 金币 / 名册 / 任务 / 招募候选
  * - Phase 4: 怪癖 / 疾病 / 饰品 / 露营状态 / 持续 Buff
+ * - Phase 5: 区域进度 / 区域发现
+ * - Phase 6: Boss 状态 / 区域威胁 / 战役总进度
+ * - Phase 7: 最终战役状态 / 结局
  *
  * 版本迁移:
  * - v2 → v3: 补 campaign/hamlet 字段
  * - v3 → v4: 补 hero.lockedPositiveQuirkIds/diseaseIds/equippedTrinketInstanceIds,
  *            补 campaign.trinketInventory, 补 expedition.campState/expeditionBuffs/campUsed
+ * - v4 → v5: 补 regionProgress / regionDiscovery / selectedRegionId
+ * - v5 → v6: 补 bossStates / regionThreats / campaignThreat / bossEncounterState
+ * - v6 → v7: 补 finalCampaignState / campaignEnding
  *
  * 不会保存 UI 状态(由 UI Store 重新初始化)
  */
 
 import type { GameState } from '../game-engine/expedition/types.js';
 import { GAME_STATE_VERSION } from '../game-engine/expedition/types.js';
+import { createEmptyFinalCampaignState } from '../game-engine/final/index.js';
 
-const STORAGE_KEY = 'dd-web-expedition-save-v6';
+const STORAGE_KEY = 'dd-web-expedition-save-v7';
+const STORAGE_KEY_V6 = 'dd-web-expedition-save-v6';
 const STORAGE_KEY_V5 = 'dd-web-expedition-save-v5';
 const STORAGE_KEY_V4 = 'dd-web-expedition-save-v4';
 const STORAGE_KEY_V3 = 'dd-web-expedition-save-v3';
 const STORAGE_KEY_V2 = 'dd-web-expedition-save-v2';
-const SETTINGS_KEY = 'dd-web-settings-v5';
+const SETTINGS_KEY = 'dd-web-settings-v6';
 
 export interface SaveData {
-  version: 6 | 5 | 4;
+  version: 7 | 6 | 5 | 4;
   state: GameState;
   savedAt: string;
 }
@@ -50,12 +58,13 @@ export function saveGame(state: GameState): void {
   if (typeof localStorage === 'undefined') return;
   try {
     const data: SaveData = {
-      version: 6,
+      version: 7,
       state,
       savedAt: new Date().toISOString(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    // 写完 v6 后清掉旧 v5
+    // 写完 v7 后清掉旧 v6 / v5
+    try { localStorage.removeItem(STORAGE_KEY_V6); } catch { /* ignore */ }
     try { localStorage.removeItem(STORAGE_KEY_V5); } catch { /* ignore */ }
   } catch (e) {
     console.warn('[save] failed to save game', e);
@@ -65,26 +74,40 @@ export function saveGame(state: GameState): void {
 export function loadGame(): SaveData | null {
   if (typeof localStorage === 'undefined') return null;
   try {
-    // 优先读 v6
-    const v6Raw = localStorage.getItem(STORAGE_KEY);
-    if (v6Raw) {
-      const data = JSON.parse(v6Raw) as SaveData;
-      if (data.version !== 6) return null;
+    // 优先读 v7
+    const v7Raw = localStorage.getItem(STORAGE_KEY);
+    if (v7Raw) {
+      const data = JSON.parse(v7Raw) as SaveData;
+      if (data.version !== 7) return null;
       if (data.state.version !== GAME_STATE_VERSION) return null;
       return data;
     }
-    // 没有 v6 尝试 v5 迁移
-    const v5Raw = localStorage.getItem(STORAGE_KEY_V5);
-    if (v5Raw) {
-      const v5 = JSON.parse(v5Raw) as { version: 5; state: GameState; savedAt: string };
-      if (v5.version !== 5) return null;
-      const migrated = migrateV5ToV6(v5);
+    // 没有 v7 尝试 v6 迁移
+    const v6Raw = localStorage.getItem(STORAGE_KEY_V6);
+    if (v6Raw) {
+      const v6 = JSON.parse(v6Raw) as { version: 6; state: GameState; savedAt: string };
+      if (v6.version !== 6) return null;
+      const migrated = migrateV6ToV7(v6);
       if (migrated) {
         saveGame(migrated.state);
         return migrated;
       }
     }
-    // 没有 v5 尝试 v4 迁移(链式 v4 → v5 → v6)
+    // 没有 v6 尝试 v5 迁移(链式 v5 → v6 → v7)
+    const v5Raw = localStorage.getItem(STORAGE_KEY_V5);
+    if (v5Raw) {
+      const v5 = JSON.parse(v5Raw) as { version: 5; state: GameState; savedAt: string };
+      if (v5.version !== 5) return null;
+      const v6Migrated = migrateV5ToV6(v5);
+      if (v6Migrated) {
+        const v7Migrated = migrateV6ToV7(v6Migrated);
+        if (v7Migrated) {
+          saveGame(v7Migrated.state);
+          return v7Migrated;
+        }
+      }
+    }
+    // 没有 v5 尝试 v4 迁移(链式 v4 → v5 → v6 → v7)
     const v4Raw = localStorage.getItem(STORAGE_KEY_V4);
     if (v4Raw) {
       const v4 = JSON.parse(v4Raw) as { version: 4; state: GameState; savedAt: string };
@@ -93,12 +116,15 @@ export function loadGame(): SaveData | null {
       if (v5Migrated) {
         const v6Migrated = migrateV5ToV6(v5Migrated);
         if (v6Migrated) {
-          saveGame(v6Migrated.state);
-          return v6Migrated;
+          const v7Migrated = migrateV6ToV7(v6Migrated);
+          if (v7Migrated) {
+            saveGame(v7Migrated.state);
+            return v7Migrated;
+          }
         }
       }
     }
-    // 没有 v4 尝试 v3 迁移(链式 v3 → v4 → v5 → v6)
+    // 没有 v4 尝试 v3 迁移(链式 v3 → v4 → v5 → v6 → v7)
     const v3Raw = localStorage.getItem(STORAGE_KEY_V3);
     if (v3Raw) {
       const v3 = JSON.parse(v3Raw) as { version: 3; state: GameState; savedAt: string };
@@ -109,13 +135,16 @@ export function loadGame(): SaveData | null {
         if (v5Migrated) {
           const v6Migrated = migrateV5ToV6(v5Migrated);
           if (v6Migrated) {
-            saveGame(v6Migrated.state);
-            return v6Migrated;
+            const v7Migrated = migrateV6ToV7(v6Migrated);
+            if (v7Migrated) {
+              saveGame(v7Migrated.state);
+              return v7Migrated;
+            }
           }
         }
       }
     }
-    // 没有 v3 尝试 v2 迁移(链式 v2 → v3 → v4 → v5 → v6)
+    // 没有 v3 尝试 v2 迁移(链式 v2 → v3 → v4 → v5 → v6 → v7)
     const v2Raw = localStorage.getItem(STORAGE_KEY_V2);
     if (v2Raw) {
       const v2 = JSON.parse(v2Raw) as { version: 2; state: GameState; savedAt: string };
@@ -153,8 +182,11 @@ export function loadGame(): SaveData | null {
         if (v5Migrated) {
           const v6Migrated = migrateV5ToV6(v5Migrated);
           if (v6Migrated) {
-            saveGame(v6Migrated.state);
-            return v6Migrated;
+            const v7Migrated = migrateV6ToV7(v6Migrated);
+            if (v7Migrated) {
+              saveGame(v7Migrated.state);
+              return v7Migrated;
+            }
           }
         }
       }
@@ -351,6 +383,37 @@ function migrateV5ToV6(v5: { state: GameState; savedAt: string }): SaveData | nu
     expedition,
   };
   return { version: 6, state: newState, savedAt: v5.savedAt };
+}
+
+/**
+ * V6 → V7 迁移(Phase 7):
+ *  - 升级 state.version 6 → 7
+ *  - 补 campaign.finalCampaignState
+ *    - 如果 finalCampaignGateReady === true,status = 'gate-ready'
+ *    - 否则 status = 'locked'
+ *  - 补 campaign.campaignEnding = null
+ *  - 所有既有 Boss / 死亡 / 墓园 / 英雄和区域记录必须保持不变(SPEC §20)
+ */
+function migrateV6ToV7(v6: { state: GameState; savedAt: string }): SaveData | null {
+  const s = v6.state;
+  const isGateReady = s.campaign?.campaignThreat?.finalCampaignGateReady === true;
+  const finalCampaignState = createEmptyFinalCampaignState();
+  if (isGateReady) {
+    finalCampaignState.status = 'gate-ready';
+  }
+  const campaign = s.campaign
+    ? {
+        ...s.campaign,
+        finalCampaignState,
+        campaignEnding: null,
+      }
+    : s.campaign;
+  const newState: GameState = {
+    ...s,
+    version: 7 as typeof GAME_STATE_VERSION,
+    campaign,
+  };
+  return { version: 7, state: newState, savedAt: v6.savedAt };
 }
 
 export function clearGame(): void {
