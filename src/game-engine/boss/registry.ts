@@ -1,9 +1,9 @@
 /**
- * Boss 注册表(Phase 6A)
+ * Boss 注册表(Phase 6B)
  *
  * 6A 阶段只交付 1 个测试 Boss `boss-test-arbiter` 用于验证框架。
- * 6B/6C/6D 将分别覆盖为三个正式区域 Boss:
- *  - 失落审判者 / 孢疫母巢 / 饥渊吞噬者
+ * 6B 把测试 Boss 内容升级为"失落审判者"完整设计(遗迹 Boss,per dev §20.1)。
+ * 6C/6D 将分别新增"孢疫母巢"和"饥渊吞噬者"。
  *
  * 数据驱动:registry 集中管理所有 Boss 静态定义,UI 只读不写。
  */
@@ -45,7 +45,7 @@ export const BOSS_TASKS: Record<string, BossTaskMeta> = {
     bossId: 'boss-test-arbiter',
     type: 'investigation',
     name: '调查远古审判厅',
-    description: '在遗迹深处找到审判厅的入口,确认审判者确实存在。',
+    description: '深入遗迹,在北侧偏殿找到通往审判厅的隐藏甬道;翻阅落满灰尘的审判名册,确认"失落审判者"确实在守卫着它。',
     grantsIds: ['intel-attack-1', 'intel-status-1', 'intel-phase-1'],
   },
   // ---- 削弱任务 ----
@@ -54,7 +54,7 @@ export const BOSS_TASKS: Record<string, BossTaskMeta> = {
     bossId: 'boss-test-arbiter',
     type: 'weakening',
     name: '摧毁召唤祭坛',
-    description: '找到遗迹内的两座祭坛并摧毁,削弱 Boss 的召唤能力。',
+    description: '在遗迹西侧坍塌的神殿中找到两座审判祭坛,凿碎其上的铭文石板。祭坛摧毁后,Boss 第一阶段将无法再召唤亡魂。',
     grantsIds: ['weaken-summon-altar'],
   },
   'task-test-weaken-2': {
@@ -62,7 +62,7 @@ export const BOSS_TASKS: Record<string, BossTaskMeta> = {
     bossId: 'boss-test-arbiter',
     type: 'weakening',
     name: '找到破咒圣物',
-    description: '在古墓中找到能解除审判者诅咒的圣物,削弱其压力攻击。',
+    description: '在废墟下方的隐修室中找到一只封存完好的银质圣骨匣,内含曾被审判者本人降罪之人的遗骨。携带它进入 Boss 战可削弱诅咒压力。',
     grantsIds: ['weaken-stress-curse'],
   },
   // ---- 最终讨伐 ----
@@ -70,8 +70,8 @@ export const BOSS_TASKS: Record<string, BossTaskMeta> = {
     id: 'task-test-final-1',
     bossId: 'boss-test-arbiter',
     type: 'final',
-    name: '审判者讨伐',
-    description: '进入审判厅,在三阶段中选择战术击败审判者。',
+    name: '失落审判者讨伐',
+    description: '进入审判厅,经历 8-12 个节点的 Boss 专属路线,在最后准备节点确认队伍状态,再进入三阶段选择式 Boss 遭遇。',
     grantsIds: [],
   },
 };
@@ -101,11 +101,11 @@ export const BOSS_ENVIRONMENT_TARGETS: Record<string, BossEnvironmentTargetDefin
     id: 'env-test-altar',
     bossId: 'boss-test-arbiter',
     name: '审判祭坛',
-    description: '高耸的石质祭坛,持续向审判者输送信徒亡魂。',
+    description: '高耸的玄武岩祭坛,顶端嵌着审判者本人被降罪前的徽记。它持续向审判厅输送生前信徒的亡魂,让 Boss 战第一阶段永远有源源不断的召唤物。',
     hp: 30,
-    stateTags: ['summon-source', 'sacred'],
+    stateTags: ['summon-source', 'sacred', 'ruins-only'],
     activeEffects: [
-      { kind: 'inc-flag', flagName: 'boss_summon_pool_size', amount: 1, narrativeHint: '祭坛放大了召唤池' },
+      { kind: 'inc-flag', flagName: 'boss_summon_pool_size', amount: 1, narrativeHint: '祭坛向审判厅输送亡魂' },
     ],
     destroyEffects: [
       { kind: 'clear-flag', flagName: 'boss_summon_pool_size' },
@@ -115,7 +115,7 @@ export const BOSS_ENVIRONMENT_TARGETS: Record<string, BossEnvironmentTargetDefin
       {
         id: 'env-altar-smash',
         title: '直接摧毁祭坛',
-        description: '让前排英雄冒险靠近并击碎祭坛。',
+        description: '让前排英雄冒险靠近并凿碎祭坛上的铭文石板。',
         conditions: [],
         effects: [
           { kind: 'hp-delta', amount: -8, heroSelector: 'front-rank', narrativeHint: '祭坛的诅咒反噬' },
@@ -126,12 +126,22 @@ export const BOSS_ENVIRONMENT_TARGETS: Record<string, BossEnvironmentTargetDefin
       {
         id: 'env-altar-seal',
         title: '用圣物封印祭坛',
-        description: '消耗一个 Boss 特殊物品,远程封印祭坛。',
+        description: '消耗一只"破咒圣物"或"圣水",远程封印祭坛,避免前线冒险。',
         conditions: [],
         effects: [
           { kind: 'inc-flag', flagName: 'env_altar_sealed', amount: 1 },
         ],
         riskTags: ['consume-boss-item'],
+      },
+      {
+        id: 'env-altar-skip',
+        title: '暂不处理祭坛',
+        description: '跳过本轮环境交互,继续攻击 Boss 本体或处理其他目标。',
+        conditions: [],
+        effects: [
+          { kind: 'inc-flag', flagName: 'env_altar_skipped', amount: 1 },
+        ],
+        riskTags: ['miss-environment-window'],
       },
     ],
   },
@@ -139,9 +149,9 @@ export const BOSS_ENVIRONMENT_TARGETS: Record<string, BossEnvironmentTargetDefin
     id: 'env-test-shield',
     bossId: 'boss-test-arbiter',
     name: '审判屏障',
-    description: '环绕 Boss 的魔法屏障,降低所有伤害。',
+    description: '审判者四周浮动的金色符文屏障,只有当玩家完成"调查任务"或"摧毁祭坛"后才会显现。屏障存在时,Boss 阶段 0 受到的伤害减半。',
     hp: 20,
-    stateTags: ['defense', 'magic'],
+    stateTags: ['defense', 'magic', 'ruins-only'],
     activeEffects: [
       { kind: 'set-flag', flagName: 'boss_damage_reduction', flagValue: 0.5 },
     ],
@@ -152,12 +162,22 @@ export const BOSS_ENVIRONMENT_TARGETS: Record<string, BossEnvironmentTargetDefin
       {
         id: 'env-shield-break',
         title: '集中火力击碎屏障',
-        description: '全员攻击核心,放弃本轮其他战术。',
+        description: '全员集火屏障,放弃本轮攻击 Boss 本体或其他战术。',
         conditions: [],
         effects: [
           { kind: 'inc-flag', flagName: 'env_shield_destroyed', amount: 1 },
         ],
         riskTags: ['all-in', 'skip-other-tactics'],
+      },
+      {
+        id: 'env-shield-pierce',
+        title: '用破咒圣物穿透屏障',
+        description: '消耗一只"破咒圣物",直接穿透屏障,本轮可同时攻击 Boss。',
+        conditions: [],
+        effects: [
+          { kind: 'inc-flag', flagName: 'env_shield_pierced', amount: 1 },
+        ],
+        riskTags: ['consume-boss-item'],
       },
     ],
   },
@@ -175,7 +195,7 @@ export const BOSS_INTELLIGENCE: Record<string, BossIntelligenceEntry> = {
     title: '审判之锤',
     category: 'attack-pattern',
     summary: '审判者的近战重击,可能直接造成死亡之门风险。',
-    revealedDetail: '审判者每 3 轮释放一次审判之锤,前排英雄若处于 Death\'s Door 状态有 50% 概率直接阵亡。',
+    revealedDetail: '审判者每 3 轮释放一次审判之锤,前排英雄若处于 Death\'s Door 状态有 50% 概率直接阵亡;带"抗压"tag 的职业可在被锁定的回合主动格挡,将阵亡概率降至 10%。',
     unlockSources: [
       { type: 'investigation-quest', sourceId: 'task-test-investigate-1' },
     ],
@@ -188,8 +208,8 @@ export const BOSS_INTELLIGENCE: Record<string, BossIntelligenceEntry> = {
     bossId: 'boss-test-arbiter',
     title: '亡魂波',
     category: 'attack-pattern',
-    summary: '审判者召唤亡魂,造成群体压力伤害。',
-    revealedDetail: '亡魂波对全员施加 5-10 压力,职业带抗压 tag 可减半。',
+    summary: '审判者从祭坛召唤信徒亡魂,造成群体压力伤害。',
+    revealedDetail: '亡魂波对全员施加 5-10 压力,职业带"抗压"tag 可减半;若完成削弱任务"摧毁召唤祭坛",亡魂波直接被封印,不再产生。',
     unlockSources: [
       { type: 'elite-encounter', sourceId: 'elite-审判者亲卫' },
     ],
@@ -204,7 +224,7 @@ export const BOSS_INTELLIGENCE: Record<string, BossIntelligenceEntry> = {
     title: '诅咒印记',
     category: 'status-threat',
     summary: '被审判者目光锁定的英雄承受持续压力。',
-    revealedDetail: '被诅咒的英雄每轮额外 +3 压力,持续 3 轮。',
+    revealedDetail: '被诅咒的英雄每轮额外 +3 压力,持续 3 轮;进入阶段 2 后升级为每轮 +5。携带"圣水"或完成削弱任务"找到破咒圣物"可完全免疫诅咒印记(每轮压力上限压回 0)。',
     unlockSources: [
       { type: 'investigation-quest', sourceId: 'task-test-investigate-1' },
     ],
@@ -219,7 +239,7 @@ export const BOSS_INTELLIGENCE: Record<string, BossIntelligenceEntry> = {
     title: '阶段 1:召集亡者',
     category: 'phase-mechanic',
     summary: '审判者进入第二阶段时会召唤两批亡魂。',
-    revealedDetail: '进入第二阶段立即召唤 2 个亡魂,之后每 2 轮召唤 1 个,直到祭坛被摧毁。',
+    revealedDetail: '进入第二阶段立即召唤 2 个亡魂,之后每 2 轮召唤 1 个,直到祭坛被摧毁;若已摧毁祭坛,第二阶段跳过召唤,直接进入战位重排。',
     unlockSources: [
       { type: 'first-phase-encounter', sourceId: 'boss-test-arbiter-phase-1' },
     ],
@@ -233,7 +253,7 @@ export const BOSS_INTELLIGENCE: Record<string, BossIntelligenceEntry> = {
     title: '阶段 2:终末宣判',
     category: 'phase-mechanic',
     summary: '审判者进入第三阶段时不再使用普通攻击,只释放审判。',
-    revealedDetail: '第三阶段每轮 100% 释放审判,压力 ≥ 85 的英雄直接进入死亡之门。',
+    revealedDetail: '第三阶段每轮 100% 释放"终末宣判":压力 ≥ 85 的英雄直接进入死亡之门;压力 ≥ 100 的英雄在宣判后立即阵亡(无法抵抗)。该阶段只持续 3 轮,玩家必须在前 2 轮内打出足够伤害。',
     unlockSources: [
       { type: 'first-boss-failure', sourceId: 'boss-test-arbiter' },
     ],
@@ -247,8 +267,8 @@ export const BOSS_INTELLIGENCE: Record<string, BossIntelligenceEntry> = {
     bossId: 'boss-test-arbiter',
     title: '审判祭坛弱点',
     category: 'environment-target',
-    summary: '审判祭坛位于 Boss 房间的西北角。',
-    revealedDetail: '击碎祭坛可削弱 Boss 第一阶段召唤次数,但前排英雄会承受诅咒反噬。',
+    summary: '审判祭坛位于 Boss 房间的西北角,带有两处结构性弱点。',
+    revealedDetail: '祭坛底座的两块铭文石板是承重点,凿碎后整个祭坛会在 2 轮内自然崩塌;若携带"破咒圣物",可绕过石板直接封印祭坛,避免前线冒险。',
     unlockSources: [
       { type: 'special-curio', sourceId: 'curio-审判者日记' },
     ],
@@ -262,8 +282,8 @@ export const BOSS_INTELLIGENCE: Record<string, BossIntelligenceEntry> = {
     bossId: 'boss-test-arbiter',
     title: '圣水储备',
     category: 'recommended-provision',
-    summary: '圣水能净化诅咒印记。',
-    revealedDetail: '圣水是唯一可在 Boss 战内解除诅咒印记的补给,建议至少带 2 个。',
+    summary: '圣水能净化诅咒印记,建议至少带 2 个。',
+    revealedDetail: '圣水是唯一可在 Boss 战内主动解除诅咒印记的补给,使用后立即清除被锁定英雄身上的所有诅咒状态;未带圣水时只能依赖"破咒圣物"(任务奖励)或硬扛每轮 +5 压力。',
     unlockSources: [
       { type: 'class-analysis', sourceId: 'class-cleric' },
     ],
@@ -278,7 +298,7 @@ export const BOSS_INTELLIGENCE: Record<string, BossIntelligenceEntry> = {
     title: '撤退窗口收窄',
     category: 'retreat-risk',
     summary: 'Boss 进入第三阶段后撤退成功率大幅下降。',
-    revealedDetail: '第三阶段撤退成功率仅 35%,且诅咒削弱在撤退后失效。',
+    revealedDetail: '阶段 0 撤退成功率 65%(默认),阶段 1 降至 50%,阶段 2 仅 35%;撤退成功后,削弱任务"找到破咒圣物"的效果会失效(直到下次挑战前不再生效),但"摧毁召唤祭坛"永久保留。',
     unlockSources: [
       { type: 'first-boss-failure', sourceId: 'boss-test-arbiter' },
     ],
@@ -298,7 +318,7 @@ export const BOSS_WEAKENING_EFFECTS: Record<string, BossWeakeningEffect> = {
     bossId: 'boss-test-arbiter',
     sourceQuestId: 'task-test-weaken-1',
     name: '摧毁召唤祭坛',
-    description: '祭坛被摧毁,Boss 第一阶段召唤次数减半。',
+    description: '祭坛被摧毁,Boss 第二阶段不再召唤亡魂;玩家可直接跳过对亡魂的处理,把战术资源集中在攻击核心或环境目标上。',
     phaseModifiers: [
       {
         phaseIndex: 1,
@@ -318,7 +338,7 @@ export const BOSS_WEAKENING_EFFECTS: Record<string, BossWeakeningEffect> = {
     bossId: 'boss-test-arbiter',
     sourceQuestId: 'task-test-weaken-2',
     name: '破除诅咒',
-    description: 'Boss 诅咒印记压力值从 3 降到 1。',
+    description: 'Boss 诅咒印记压力值从每轮 5 降到 1;被锁定的英雄不再快速冲破死亡之门门槛。注意:撤退成功后此削弱会失效,需重新准备。',
     phaseModifiers: [
       {
         phaseIndex: 2,
@@ -342,8 +362,8 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
     id: 'phase-test-0',
     bossId: 'boss-test-arbiter',
     phaseIndex: 0,
-    name: '识别',
-    description: 'Boss 展示核心威胁;玩家验证情报;环境目标出现。',
+    name: '审判',
+    description: '失落审判者从审判席上站起,身前浮现出"审判之锤"的轮廓;环境目标审判屏障显现,玩家可在本阶段先观察情报,或用破咒圣物穿透屏障。',
     enterConditions: [
       { kind: 'flag-exists', flagName: 'boss_encounter_active' },
     ],
@@ -359,7 +379,7 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
       {
         id: 'tactic-p0-probe',
         title: '试探性攻击',
-        description: '前排试探 Boss,确认攻击模式。',
+        description: '前排试探审判者,确认"审判之锤"的节奏;适合情报尚不完整、需要数据收集的首次挑战。',
         conditions: [],
         weight: 1.0,
         category: 'attack-core',
@@ -372,8 +392,8 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
       },
       {
         id: 'tactic-p0-env',
-        title: '观察环境目标',
-        description: '本轮只观察环境目标,不攻击 Boss。',
+        title: '击碎审判屏障',
+        description: '集中火力击碎审判屏障,让后续阶段 1 的攻击直接命中 Boss 本体(否则 -50% 伤害减免)。',
         conditions: [],
         weight: 0.8,
         category: 'destroy-environment',
@@ -387,7 +407,7 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
       {
         id: 'tactic-p0-stabilize',
         title: '稳定压力',
-        description: '本轮全员专注于缓解压力,放弃输出。',
+        description: '全员在审判厅前停留,集中缓解压力,放弃本轮输出;适合压力 ≥ 60 的队伍。',
         conditions: [],
         weight: 0.5,
         category: 'stabilize-stress',
@@ -405,7 +425,7 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
         effects: [
           { kind: 'set-flag', flagName: 'boss_encounter_active', flagValue: true },
         ],
-        narrativeHint: 'Boss 战开始',
+        narrativeHint: 'Boss 战开始:审判者缓缓站起',
       },
     ],
   },
@@ -413,8 +433,8 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
     id: 'phase-test-1',
     bossId: 'boss-test-arbiter',
     phaseIndex: 1,
-    name: '机制升级',
-    description: 'Boss 攻击增强;召唤物出现;未完成削弱任务的惩罚显现。',
+    name: '召集亡者',
+    description: '审判者击碎审判屏障,从西北角的召唤祭坛中召出亡魂;若未完成"摧毁召唤祭坛"削弱,本阶段会持续刷新亡魂,玩家必须在"清亡魂/攻核心/毁祭坛"之间取舍。',
     enterConditions: [
       { kind: 'flag-gte', flagName: 'boss_phase_rounds', value: 3 },
     ],
@@ -439,7 +459,7 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
       {
         id: 'tactic-p1-attack-core',
         title: '全力攻击核心',
-        description: '全员集中攻击 Boss 本体。',
+        description: '全员集中攻击审判者本体,放弃本轮处理亡魂或祭坛;适合祭坛已被削弱任务摧毁的情况。',
         conditions: [],
         weight: 1.0,
         category: 'attack-core',
@@ -452,8 +472,8 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
       },
       {
         id: 'tactic-p1-handle-summon',
-        title: '清理召唤物',
-        description: '本轮先清理亡魂,延迟攻击 Boss。',
+        title: '清理亡魂',
+        description: '本轮先集中清理刚召出的亡魂,延迟攻击 Boss;但让审判者有 1 轮时间继续召唤更多亡魂。',
         conditions: [],
         weight: 0.7,
         category: 'handle-summon',
@@ -467,7 +487,7 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
       {
         id: 'tactic-p1-destroy-env',
         title: '摧毁召唤祭坛',
-        description: '集中火力摧毁祭坛,削弱后续召唤。',
+        description: '派前排冒险靠近西北角,凿碎祭坛底座的两块铭文石板;摧毁后本阶段后续不再召唤亡魂。',
         conditions: [
           { kind: 'flag-exists', flagName: 'env_altar_intact' },
         ],
@@ -489,7 +509,7 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
           { kind: 'set-flag', flagName: 'boss_phase_rounds', flagValue: 0 },
           { kind: 'set-flag', flagName: 'env_altar_intact', flagValue: true },
         ],
-        narrativeHint: '第二阶段:Boss 开始召唤亡魂',
+        narrativeHint: '第二阶段:亡者受召,从审判厅四壁涌入',
       },
     ],
   },
@@ -497,8 +517,8 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
     id: 'phase-test-2',
     bossId: 'boss-test-arbiter',
     phaseIndex: 2,
-    name: '绝境收尾',
-    description: 'Boss 释放终末宣判;撤退成本提高;选择数量收紧。',
+    name: '终末宣判',
+    description: '审判者放下武器,缓缓升空;每轮以"终末宣判"对全员进行最后审判——压力 ≥ 85 的英雄直接进入死亡之门,压力 ≥ 100 直接阵亡。玩家必须在前 2 轮内打出足够伤害,否则第 3 轮就只剩残队。',
     enterConditions: [
       { kind: 'flag-gte', flagName: 'boss_phase_rounds', value: 6 },
     ],
@@ -512,7 +532,7 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
       {
         id: 'tactic-p2-all-in',
         title: '孤注一掷',
-        description: '无视一切,全力攻击 Boss。',
+        description: '无视一切,全力攻击审判者;本轮全员压力 +5(可能让部分英雄冲破死亡之门),但能在第 2 轮结束前打出决定性伤害。',
         conditions: [],
         weight: 1.0,
         category: 'attack-core',
@@ -526,7 +546,7 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
       {
         id: 'tactic-p2-protect',
         title: '保护关键英雄',
-        description: '让前排保护压力最高的英雄。',
+        description: '让前排护住压力最高的英雄,本轮全员压力 -3;适合队伍已经过半数濒死、需要稳定下来的情况。',
         conditions: [],
         weight: 0.6,
         category: 'protect-hero',
@@ -539,7 +559,7 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
       {
         id: 'tactic-p2-retreat',
         title: '尝试撤退',
-        description: '在第三阶段尝试撤退(成功率仅 35%)。',
+        description: '在终末宣判下撤退,基础成功率仅 35%;若携带"破咒圣物"且未使用,撤退成功率 +20%。撤退后破咒削弱失效,但摧毁祭坛削弱保留。',
         conditions: [],
         weight: 0.3,
         category: 'retreat',
@@ -556,7 +576,7 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
         effects: [
           { kind: 'set-flag', flagName: 'boss_final_phase', flagValue: true },
         ],
-        narrativeHint: '第三阶段:Boss 释放终末宣判',
+        narrativeHint: '第三阶段:终末宣判,审判者升空',
       },
     ],
   },
@@ -571,7 +591,7 @@ export const BOSS_PERMANENT_REWARDS: Record<string, BossPermanentReward> = {
     id: 'reward-test-arbiter',
     bossId: 'boss-test-arbiter',
     name: '审判者遗产',
-    description: '击败审判者后,遗迹区域的侦察和抗压能力提升。',
+    description: '击败失落审判者后,玩家获得"审判者封印"饰品,遗迹区域侦察 +20%、抗压 +15%;并解锁"审判者余威"任务修正词(后续任务每场 +3 压力上限 -5%)。遗产不会被重复领取(SPEC §27)。',
     campaignModifiers: [
       { kind: 'set-flag', flagName: 'ruins_scouting_bonus', flagValue: 0.2 },
       { kind: 'set-flag', flagName: 'ruins_stress_resist', flagValue: 0.15 },
@@ -590,7 +610,7 @@ export const BOSS_QUEST_ITEMS: Record<string, BossQuestItemDefinition> = {
     id: 'item-test-sacred-water',
     bossId: 'boss-test-arbiter',
     name: '圣水',
-    description: '能净化审判者诅咒印记的圣水。',
+    description: '用审判厅地下圣泉的水装满的小银瓶;在 Boss 战可使用,立即清除被锁定英雄身上的"诅咒印记"状态。建议至少带 2 瓶应对阶段 2 的持续施压。',
     inventorySlots: 1,
     availableInFinalEncounter: true,
     tacticalChoiceIds: ['tactic-p2-purify'],
@@ -599,8 +619,8 @@ export const BOSS_QUEST_ITEMS: Record<string, BossQuestItemDefinition> = {
   'item-test-holy-relic': {
     id: 'item-test-holy-relic',
     bossId: 'boss-test-arbiter',
-    name: '审判者遗物',
-    description: '在 Boss 战可一次性强制降低阶段转换条件。',
+    name: '破咒圣物',
+    description: '从隐修室获得的银质圣骨匣,内含被审判者降罪之人的遗骨;在 Boss 战可一次性穿透审判屏障,或封锁召唤祭坛(无需前线冒险);撤退成功后此物仍保留。',
     inventorySlots: 1,
     availableInFinalEncounter: true,
     tacticalChoiceIds: ['tactic-p1-force-phase'],
@@ -615,12 +635,12 @@ export const BOSS_QUEST_ITEMS: Record<string, BossQuestItemDefinition> = {
 export const BOSS_DEFINITIONS: Record<string, BossDefinition> = {
   'boss-test-arbiter': {
     id: 'boss-test-arbiter',
-    name: '测试审判者',
+    name: '失落审判者',
     regionId: 'ruins',
-    description: 'Phase 6A 占位 Boss,用于验证通用框架;6B 将被"失落审判者"覆盖。',
+    description: '百年前因错判而被降罪,封入遗迹深处审判厅的审判者;他以亡魂为兵、以诅咒为刃,凡踏入审判厅者必须接受他的"终末宣判"。核心威胁:高压力 + 宗教诅咒 + 召唤信徒;玩家通过情报 + 削弱任务 + 针对性组队,改变 Boss 战的多个关键节点。',
     threatTags: ['stress', 'summon', 'curse'],
-    recommendedHeroTags: ['stress-resist', 'frontline'],
-    recommendedProvisionIds: ['item-test-sacred-water'],
+    recommendedHeroTags: ['stress-resist', 'frontline', 'curse-immunity'],
+    recommendedProvisionIds: ['item-test-sacred-water', 'item-test-holy-relic'],
     recommendedTrinketTags: ['stress-resist', 'curse-immunity'],
     intelligenceEntryIds: Object.keys(BOSS_INTELLIGENCE),
     investigationQuestIds: ['task-test-investigate-1'],
