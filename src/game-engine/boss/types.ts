@@ -530,3 +530,31 @@ export interface BossExpeditionPreview {
   availableTacticalOptions: TacticalOptionRule[];
   threatState: RegionThreatState;
 }
+
+// =====================================================================
+// 工厂(无依赖,放在 types.ts 避免循环 import)
+// =====================================================================
+
+/**
+ * 创建初始 BossCampaignState(hidden 状态,SPEC §5)
+ * 用于 dispatcher 初始化 CampaignState.bossStates 时调用
+ */
+export function createEmptyBossCampaignState(
+  bossId: BossId,
+  regionId: RegionId,
+): BossCampaignState {
+  return {
+    bossId,
+    regionId,
+    status: 'hidden',
+    intelligenceProgress: 0,
+    discoveredIntelligenceEntryIds: [],
+    completedInvestigationQuestIds: [],
+    completedWeakeningQuestIds: [],
+    activeWeakeningEffectIds: [],
+    failedAttemptCount: 0,
+    retreatCount: 0,
+    unlockedAtWeek: null,
+    defeatedAtWeek: null,
+  };
+}

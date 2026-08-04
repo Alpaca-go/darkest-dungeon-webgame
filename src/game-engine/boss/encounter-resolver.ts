@@ -20,7 +20,6 @@ import type {
 } from './types.js';
 import {
   BOSS_PHASES,
-  BOSS_WEAKENING_EFFECTS,
   BOSS_ENVIRONMENT_TARGETS,
 } from './registry.js';
 

@@ -23,6 +23,9 @@ export {
   BOSS_QUEST_ITEMS,
   BOSS_ENVIRONMENT_TARGETS,
   BOSS_TASKS,
+  initializeBossStates,
+  initializeRegionThreats,
+  createEmptyCampaignThreat,
   type BossTaskMeta,
 } from './registry.js';
 export {
@@ -38,9 +41,9 @@ export {
   resolveDefeat,
   resolveFailure,
   attemptRetreat,
-  createEmptyBossCampaignState,
   type BossReducerResult,
 } from './state-machine.js';
+export { createEmptyBossCampaignState } from './types.js';
 export {
   stateFromThreatValue,
   clampThreatValue,

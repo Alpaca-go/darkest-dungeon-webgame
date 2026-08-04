@@ -708,6 +708,13 @@ export interface ExpeditionState {
   expeditionBuffs?: import('../camps/types.js').ExpeditionBuff[];
   /** 本远征是否已露营过 */
   campUsed?: boolean;
+  // ========== Phase 6 Boss 战(SPEC §23.2) ==========
+  /** 当前 Boss 战状态(null = 未在 Boss 战) */
+  bossEncounterState?: import('../boss/types.js').BossEncounterState | null;
+  /** 远征中持有的 Boss 特殊物品 id 列表 */
+  bossQuestItemIds?: string[];
+  /** 当前远征生效的削弱效果 id 列表(冗余字段,方便 UI 查询) */
+  activeBossWeakeningEffectIds?: string[];
 }
 
 // =====================================================================

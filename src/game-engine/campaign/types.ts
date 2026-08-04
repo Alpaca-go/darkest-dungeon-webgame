@@ -65,6 +65,12 @@ export interface CampaignState {
   regionProgress?: Record<string, import('../regions/types.js').RegionProgress>;
   /** Phase 5:区域发现(按 regionId) */
   regionDiscovery?: Record<string, import('../regions/types.js').RegionDiscoveryState>;
+  /** Phase 6:Boss 跨周状态(按 bossId) */
+  bossStates?: Record<string, import('../boss/types.js').BossCampaignState>;
+  /** Phase 6:区域威胁进度(按 regionId) */
+  regionThreats?: Record<string, import('../boss/types.js').RegionThreatProgress>;
+  /** Phase 6:战役总进度 */
+  campaignThreat?: import('../boss/types.js').CampaignThreatState;
   status: CampaignStatus;
 }
 

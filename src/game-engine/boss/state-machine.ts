@@ -402,29 +402,5 @@ export function attemptRetreat(
 }
 
 // =====================================================================
-// 工厂函数
+// 工厂函数(已移至 types.ts,避免循环 import)
 // =====================================================================
-
-/**
- * 创建初始 BossCampaignState(hidden 状态)
- * 用于 dispatcher 在初始化 CampaignState 时调用
- */
-export function createEmptyBossCampaignState(
-  bossId: string,
-  regionId: import('../regions/types.js').RegionId,
-): BossCampaignState {
-  return {
-    bossId,
-    regionId,
-    status: 'hidden',
-    intelligenceProgress: 0,
-    discoveredIntelligenceEntryIds: [],
-    completedInvestigationQuestIds: [],
-    completedWeakeningQuestIds: [],
-    activeWeakeningEffectIds: [],
-    failedAttemptCount: 0,
-    retreatCount: 0,
-    unlockedAtWeek: null,
-    defeatedAtWeek: null,
-  };
-}

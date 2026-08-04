@@ -634,3 +634,54 @@ export const BOSS_DEFINITIONS: Record<string, BossDefinition> = {
     permanentRewardId: 'reward-test-arbiter',
   },
 };
+
+// =====================================================================
+// 10. 初始化 helpers(SPEC §28)
+// =====================================================================
+
+import { createEmptyRegionThreat } from './threat.js';
+import type { RegionId } from '../regions/types.js';
+import {
+  createEmptyBossCampaignState,
+} from './types.js';
+import type {
+  BossCampaignState,
+  RegionThreatProgress,
+  CampaignThreatState,
+} from './types.js';
+
+/**
+ * 初始化所有 Boss 的跨周状态(SPEC §28)
+ * 给 BOSS_DEFINITIONS 中每个 Boss 创建一个 hidden 状态
+ */
+export function initializeBossStates(): Record<string, BossCampaignState> {
+  const result: Record<string, BossCampaignState> = {};
+  for (const boss of Object.values(BOSS_DEFINITIONS)) {
+    result[boss.id] = createEmptyBossCampaignState(boss.id, boss.regionId);
+  }
+  return result;
+}
+
+/**
+ * 初始化所有区域的威胁进度(SPEC §28)
+ * 3 个区域 × dormant 0
+ */
+export function initializeRegionThreats(): Record<RegionId, RegionThreatProgress> {
+  return {
+    'ruins': createEmptyRegionThreat('ruins'),
+    'corrupted-woods': createEmptyRegionThreat('corrupted-woods'),
+    'underground-burrows': createEmptyRegionThreat('underground-burrows'),
+  };
+}
+
+/**
+ * 初始化战役总进度(SPEC §28)
+ */
+export function createEmptyCampaignThreat(): CampaignThreatState {
+  return {
+    defeatedBossIds: [],
+    totalBossesDefeated: 0,
+    campaignThreatLevel: 0,
+    finalCampaignGateReady: false,
+  };
+}
