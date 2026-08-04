@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Phase 6B Phase6DebugPanel 组件测试
  *
  * 不实际渲染 React(项目没装 @testing-library),只验证:

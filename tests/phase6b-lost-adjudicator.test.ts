@@ -1,8 +1,8 @@
-/**
- * Phase 6B 失落审判者 Boss 内容测试
+﻿/**
+ * Phase 6B The Necromancer Boss 内容测试
  *
  * 覆盖:
- *  - 名字/描述符合 dev §20.1(失落审判者/宗教/召唤/祭坛/三阶段)
+ *  - 名字/描述符合 dev §20.1(The Necromancer/宗教/召唤/祭坛/三阶段)
  *  - 8 条情报 narrative 主题覆盖
  *  - 2 削弱任务 + 削弱效果 narrative 描述具体化
  *  - 2 环境目标 + 2 特殊物品 narrative 详细
@@ -28,9 +28,9 @@ import {
 const BOSS_ID = 'boss-test-arbiter';
 
 describe('Phase 6B: Boss 名称/主题(SPEC §20.1)', () => {
-  it('Boss name = 失落审判者', () => {
+  it('Boss name = The Necromancer', () => {
     const boss = BOSS_DEFINITIONS[BOSS_ID];
-    expect(boss.name).toBe('失落审判者');
+    expect(boss.name).toBe('The Necromancer');
   });
 
   it('Boss description 包含关键主题词', () => {

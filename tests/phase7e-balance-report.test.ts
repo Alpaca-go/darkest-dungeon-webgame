@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Phase 7E 全战役平衡报告测试(SPEC §27)
  *
  * 覆盖 9 个平衡指标:
@@ -227,7 +227,7 @@ describe('Phase 7E: 多战役汇总(SPEC §27 验收)', () => {
           defeatedBossIds: ['boss-test-arbiter', 'boss-spore-matriarch', 'boss-burrows-devourer'],
           finalBossDefeated: true,
           finalEndingType: 'victory',
-          finalRegionName: '黑暗核心',
+          finalRegionName: 'The Darkest Dungeon',
           destroyedSealCount: 3,
         }));
         events.push({ type: 'FinalBossDefeated' });
@@ -246,7 +246,7 @@ describe('Phase 7E: 多战役汇总(SPEC §27 验收)', () => {
           defeatedBossIds: ['boss-test-arbiter', 'boss-spore-matriarch', 'boss-burrows-devourer'],
           finalBossDefeated: true,
           finalEndingType: 'pyrrhic-victory',
-          finalRegionName: '黑暗核心',
+          finalRegionName: 'The Darkest Dungeon',
           destroyedSealCount: 3,
         }));
         events.push({ type: 'FinalBossDefeated' });
@@ -265,7 +265,7 @@ describe('Phase 7E: 多战役汇总(SPEC §27 验收)', () => {
           defeatedBossIds: ['boss-test-arbiter', 'boss-spore-matriarch'],
           finalBossDefeated: false,
           finalEndingType: 'failed-assault',
-          finalRegionName: '黑暗核心',
+          finalRegionName: 'The Darkest Dungeon',
           destroyedSealCount: 2,
         }));
         events.push({ type: 'BOSS_RETREAT_SUCCEEDED' });
@@ -309,7 +309,7 @@ function makeSummary(overrides: Partial<CampaignSummaryData>): CampaignSummaryDa
     mostUsedPartyHeroIds: [],
     keyTurningPointEventIds: [],
     finalEndingType: 'victory',
-    finalRegionName: '黑暗核心',
+    finalRegionName: 'The Darkest Dungeon',
     destroyedSealCount: 3,
     ...overrides,
   };

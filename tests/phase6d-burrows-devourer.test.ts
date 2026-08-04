@@ -1,8 +1,8 @@
-/**
- * Phase 6D 饥渊吞噬者 Boss 内容测试
+﻿/**
+ * Phase 6D The Swine Prince Boss 内容测试
  *
  * 覆盖:
- *  - 名字/描述符合 dev §20.3(饥渊吞噬者/撕裂獠牙/储粮/流血/兽穴)
+ *  - 名字/描述符合 dev §20.3(The Swine Prince/撕裂獠牙/储粮/流血/兽穴)
  *  - 8 条情报 narrative 主题覆盖
  *  - 2 削弱任务 + 削弱效果 narrative 描述具体化
  *  - 2 环境目标 + 2 特殊物品 narrative 详细
@@ -29,17 +29,17 @@ const BURROWS_BOSS_ID = 'boss-burrows-devourer';
 const ARBITER_BOSS_ID = 'boss-test-arbiter';
 const SPORE_BOSS_ID = 'boss-spore-matriarch';
 
-describe('Phase 6D: 饥渊吞噬者 Boss 定义(SPEC §20.3)', () => {
+describe('Phase 6D: The Swine Prince Boss 定义(SPEC §20.3)', () => {
   it('boss-burrows-devourer 存在', () => {
     expect(BOSS_DEFINITIONS[BURROWS_BOSS_ID]).toBeDefined();
   });
 
-  it('Boss name = 饥渊吞噬者', () => {
-    expect(BOSS_DEFINITIONS[BURROWS_BOSS_ID].name).toBe('饥渊吞噬者');
+  it('Boss name = The Swine Prince', () => {
+    expect(BOSS_DEFINITIONS[BURROWS_BOSS_ID].name).toBe('The Swine Prince');
   });
 
   it('Boss regionId = underground-burrows', () => {
-    expect(BOSS_DEFINITIONS[BURROWS_BOSS_ID].regionId).toBe('underground-burrows');
+    expect(BOSS_DEFINITIONS[BURROWS_BOSS_ID].regionId).toBe('warrens');
   });
 
   it('Boss description 包含关键主题词', () => {
@@ -67,9 +67,9 @@ describe('Phase 6D: 饥渊吞噬者 Boss 定义(SPEC §20.3)', () => {
 });
 
 describe('Phase 6D: 6B/6C Boss 不被破坏', () => {
-  it('boss-test-arbiter 仍是失落审判者,8 条情报', () => {
+  it('boss-test-arbiter 仍是The Necromancer,8 条情报', () => {
     const boss = BOSS_DEFINITIONS[ARBITER_BOSS_ID];
-    expect(boss.name).toBe('失落审判者');
+    expect(boss.name).toBe('The Necromancer');
     expect(boss.intelligenceEntryIds.length).toBe(8);
     for (const id of boss.intelligenceEntryIds) {
       expect(id).not.toMatch(/^intel-spore-/);
@@ -77,9 +77,9 @@ describe('Phase 6D: 6B/6C Boss 不被破坏', () => {
     }
   });
 
-  it('boss-spore-matriarch 仍是孢疫母巢,8 条情报', () => {
+  it('boss-spore-matriarch 仍是The Hag,8 条情报', () => {
     const boss = BOSS_DEFINITIONS[SPORE_BOSS_ID];
-    expect(boss.name).toBe('孢疫母巢');
+    expect(boss.name).toBe('The Hag');
     expect(boss.intelligenceEntryIds.length).toBe(8);
     for (const id of boss.intelligenceEntryIds) {
       expect(id).not.toMatch(/^intel-burrows-/);
@@ -92,8 +92,8 @@ describe('Phase 6D: 6B/6C Boss 不被破坏', () => {
     expect(states[SPORE_BOSS_ID]).toBeDefined();
     expect(states[BURROWS_BOSS_ID]).toBeDefined();
     expect(states[ARBITER_BOSS_ID].regionId).toBe('ruins');
-    expect(states[SPORE_BOSS_ID].regionId).toBe('corrupted-woods');
-    expect(states[BURROWS_BOSS_ID].regionId).toBe('underground-burrows');
+    expect(states[SPORE_BOSS_ID].regionId).toBe('weald');
+    expect(states[BURROWS_BOSS_ID].regionId).toBe('warrens');
     expect(states[ARBITER_BOSS_ID].status).toBe('hidden');
     expect(states[SPORE_BOSS_ID].status).toBe('hidden');
     expect(states[BURROWS_BOSS_ID].status).toBe('hidden');
@@ -302,7 +302,7 @@ describe('Phase 6D: 永久奖励 narrative 详细', () => {
 });
 
 describe('Phase 6D: 撤退规则(SPEC §15 + §20.3)', () => {
-  it('burrows Boss 基础撤退率 55%(比孢疫母巢更低)', () => {
+  it('burrows Boss 基础撤退率 55%(比The Hag更低)', () => {
     const boss = BOSS_DEFINITIONS[BURROWS_BOSS_ID];
     expect(boss.retreatRules.baseSuccessRate).toBe(0.55);
   });

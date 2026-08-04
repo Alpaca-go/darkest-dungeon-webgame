@@ -1,8 +1,8 @@
-/**
- * Phase 6C 孢疫母巢 Boss 内容测试
+﻿/**
+ * Phase 6C The Hag Boss 内容测试
  *
  * 覆盖:
- *  - 名字/描述符合 dev §20.2(孢疫母巢/疾病/腐蚀/孢子/感染/林地)
+ *  - 名字/描述符合 dev §20.2(The Hag/疾病/腐蚀/孢子/感染/林地)
  *  - 8 条情报 narrative 主题覆盖
  *  - 2 削弱任务 + 削弱效果 narrative 描述具体化
  *  - 2 环境目标 + 2 特殊物品 narrative 详细
@@ -28,17 +28,17 @@ import {
 const SPORE_BOSS_ID = 'boss-spore-matriarch';
 const ARBITER_BOSS_ID = 'boss-test-arbiter';
 
-describe('Phase 6C: 孢疫母巢 Boss 定义(SPEC §20.2)', () => {
+describe('Phase 6C: The Hag Boss 定义(SPEC §20.2)', () => {
   it('boss-spore-matriarch 存在', () => {
     expect(BOSS_DEFINITIONS[SPORE_BOSS_ID]).toBeDefined();
   });
 
-  it('Boss name = 孢疫母巢', () => {
-    expect(BOSS_DEFINITIONS[SPORE_BOSS_ID].name).toBe('孢疫母巢');
+  it('Boss name = The Hag', () => {
+    expect(BOSS_DEFINITIONS[SPORE_BOSS_ID].name).toBe('The Hag');
   });
 
-  it('Boss regionId = corrupted-woods', () => {
-    expect(BOSS_DEFINITIONS[SPORE_BOSS_ID].regionId).toBe('corrupted-woods');
+  it('Boss regionId = weald', () => {
+    expect(BOSS_DEFINITIONS[SPORE_BOSS_ID].regionId).toBe('weald');
   });
 
   it('Boss description 包含关键主题词', () => {
@@ -58,9 +58,9 @@ describe('Phase 6C: 孢疫母巢 Boss 定义(SPEC §20.2)', () => {
 });
 
 describe('Phase 6C: 6B 测试 Boss 不被破坏', () => {
-  it('boss-test-arbiter 仍是失落审判者,8 条情报', () => {
+  it('boss-test-arbiter 仍是 The Necromancer,8 条情报', () => {
     const boss = BOSS_DEFINITIONS[ARBITER_BOSS_ID];
-    expect(boss.name).toBe('失落审判者');
+    expect(boss.name).toBe('The Necromancer');
     expect(boss.intelligenceEntryIds.length).toBe(8);
     // 不包含 spore 情报
     for (const id of boss.intelligenceEntryIds) {
@@ -73,7 +73,7 @@ describe('Phase 6C: 6B 测试 Boss 不被破坏', () => {
     expect(states[ARBITER_BOSS_ID]).toBeDefined();
     expect(states[SPORE_BOSS_ID]).toBeDefined();
     expect(states[ARBITER_BOSS_ID].regionId).toBe('ruins');
-    expect(states[SPORE_BOSS_ID].regionId).toBe('corrupted-woods');
+    expect(states[SPORE_BOSS_ID].regionId).toBe('weald');
     expect(states[ARBITER_BOSS_ID].status).toBe('hidden');
     expect(states[SPORE_BOSS_ID].status).toBe('hidden');
   });

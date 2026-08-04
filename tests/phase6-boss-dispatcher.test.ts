@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Phase 6A Boss dispatcher 集成测试
  *
  * 覆盖:
@@ -471,7 +471,7 @@ describe('Phase 6A: 懒初始化不变量', () => {
     }
     // 三个区域都有初始 threat
     expect(next.campaign!.regionThreats!['ruins']).toBeDefined();
-    expect(next.campaign!.regionThreats!['corrupted-woods']).toBeDefined();
-    expect(next.campaign!.regionThreats!['underground-burrows']).toBeDefined();
+    expect(next.campaign!.regionThreats!['weald']).toBeDefined();
+    expect(next.campaign!.regionThreats!['warrens']).toBeDefined();
   });
 });

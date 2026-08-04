@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Phase 6E Golden Run D 测试(SPEC §37)
  *
  * Seed: DD-WEB-PHASE6-BOSS-DEFEAT-001
  *
- * 流程(用饥渊吞噬者,验证完整 Boss 击败链):
+ * 流程(用The Swine Prince,验证完整 Boss 击败链):
  *  - 完成调查任务 → 3 条情报
  *  - 完成 2 个削弱任务 → weaken-burrows-food + weaken-burrows-guard
  *  - 启动最终讨伐
@@ -74,7 +74,7 @@ function freshGameState(seed: string = SEED, week: number = 1): GameState {
       scoutLevel: 0,
       route: {
         id: 'route-1',
-        regionId: 'underground-burrows',
+        regionId: 'warrens',
         seed,
         startNodeId: 'node-1',
         objectiveNodeId: 'node-1',
@@ -183,20 +183,20 @@ describe('Phase 6E Golden Run D: 区域 Boss 击败(SPEC §37)', () => {
     // 用 DEBUG_SET_REGION_THREAT 强制设置 burrows 区域威胁为 80(模拟进行中状态)
     state = dispatchGameCommand(state, {
       type: 'DEBUG_SET_REGION_THREAT',
-      regionId: 'underground-burrows',
+      regionId: 'warrens',
       value: 80,
       commandId: newCommandId('test'),
     });
-    const before = state.campaign!.regionThreats!['underground-burrows'].threatValue;
+    const before = state.campaign!.regionThreats!['warrens'].threatValue;
     expect(before).toBe(80);
     const next = dispatchGameCommand(state, {
       type: 'RESOLVE_BOSS_DEFEAT',
       bossId: BURROWS_BOSS_ID,
       commandId: newCommandId('test'),
     });
-    const after = next.campaign!.regionThreats!['underground-burrows'].threatValue;
+    const after = next.campaign!.regionThreats!['warrens'].threatValue;
     expect(after).toBe(20);
-    expect(next.campaign!.regionThreats!['underground-burrows'].state).toBe('boss-defeated');
+    expect(next.campaign!.regionThreats!['warrens'].state).toBe('boss-defeated');
   });
 
   it('Step 5: 击败后战役进度 +1 + defeatedBossIds 包含 bossId', () => {

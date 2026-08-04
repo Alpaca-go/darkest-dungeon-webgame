@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Phase 7D 6 条 Golden Run 测试(SPEC §22)
  *
  * 覆盖 6 条 Golden Run 全部通过:
@@ -284,7 +284,7 @@ describe('Phase 7D Golden Run F: 完整新档战役(SPEC §22 F)', () => {
         finalBossDefeated: true,
         destroyedSealIds: ['seal-a', 'seal-b', 'seal-c'],
       } as FinalCampaignState,
-      finalRegionName: '黑暗核心',
+      finalRegionName: 'The Darkest Dungeon',
       week: 60,
       graveyardHeroIds: [],
       usedHeroIds: ['h-1', 'h-2', 'h-3', 'h-4'],
@@ -308,7 +308,7 @@ describe('Phase 7D Golden Run F: 完整新档战役(SPEC §22 F)', () => {
     expect(summary.finalBossDefeated).toBe(true);
     expect(summary.destroyedSealCount).toBe(3);
     expect(summary.finalEndingType).toBe('victory');
-    expect(summary.finalRegionName).toBe('黑暗核心');
+    expect(summary.finalRegionName).toBe('The Darkest Dungeon');
   });
 
   it('完整流程不变量:不变量校验通过', () => {

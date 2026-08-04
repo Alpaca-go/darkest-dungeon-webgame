@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 存档(Phase 4 P4.5 + Phase 6 + Phase 7)
  *
  * 持久化:
@@ -270,16 +270,16 @@ function migrateV4ToV5(v4: { state: GameState; savedAt: string }): SaveData | nu
               unlockedRareLootIds: [],
               bossQuestReady: false,
             },
-            'corrupted-woods': {
-              regionId: 'corrupted-woods',
+            'weald': {
+              regionId: 'weald',
               level: 0, experience: 0,
               completedQuestCount: 0, failedQuestCount: 0, retreatCount: 0,
               unlockedQuestTypeIds: [], discoveredContentIds: [],
               unlockedEliteEncounterIds: [], unlockedRareLootIds: [],
               bossQuestReady: false,
             },
-            'underground-burrows': {
-              regionId: 'underground-burrows',
+            'warrens': {
+              regionId: 'warrens',
               level: 0, experience: 0,
               completedQuestCount: 0, failedQuestCount: 0, retreatCount: 0,
               unlockedQuestTypeIds: [], discoveredContentIds: [],
@@ -289,8 +289,8 @@ function migrateV4ToV5(v4: { state: GameState; savedAt: string }): SaveData | nu
           },
           regionDiscovery: s.campaign.regionDiscovery ?? {
             ruins: { discoveredEnemyIds: [], discoveredCurioIds: [], discoveredTrapIds: [], discoveredDiseaseIds: [], discoveredTrinketIds: [] },
-            'corrupted-woods': { discoveredEnemyIds: [], discoveredCurioIds: [], discoveredTrapIds: [], discoveredDiseaseIds: [], discoveredTrinketIds: [] },
-            'underground-burrows': { discoveredEnemyIds: [], discoveredCurioIds: [], discoveredTrapIds: [], discoveredDiseaseIds: [], discoveredTrinketIds: [] },
+            'weald': { discoveredEnemyIds: [], discoveredCurioIds: [], discoveredTrapIds: [], discoveredDiseaseIds: [], discoveredTrinketIds: [] },
+            'warrens': { discoveredEnemyIds: [], discoveredCurioIds: [], discoveredTrapIds: [], discoveredDiseaseIds: [], discoveredTrinketIds: [] },
           },
         }
       : s.campaign,
@@ -350,7 +350,7 @@ function migrateV5ToV6(v5: { state: GameState; savedAt: string }): SaveData | nu
         })(),
         regionThreats: s.campaign.regionThreats ?? (() => {
           const result: Record<string, import('../game-engine/boss/types.js').RegionThreatProgress> = {};
-          for (const regionId of ['ruins', 'corrupted-woods', 'underground-burrows']) {
+          for (const regionId of ['ruins', 'weald', 'warrens']) {
             result[regionId] = {
               regionId: regionId as any,
               state: 'dormant',

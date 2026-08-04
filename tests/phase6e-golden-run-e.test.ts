@@ -1,12 +1,12 @@
-/**
+﻿/**
  * Phase 6E Golden Run E 测试(SPEC §38)
  *
  * Seed: DD-WEB-PHASE6-CAMPAIGN-001
  *
  * 流程(三 Boss 全部击败,验证战役总进度):
- *  - 击败失落审判者(boss-test-arbiter,region: ruins)
- *  - 击败孢疫母巢(boss-spore-matriarch,region: corrupted-woods)
- *  - 击败饥渊吞噬者(boss-burrows-devourer,region: underground-burrows)
+ *  - 击败The Necromancer(boss-test-arbiter,region: ruins)
+ *  - 击败The Hag(boss-spore-matriarch,region: corrupted-woods)
+ *  - 击败The Swine Prince(boss-burrows-devourer,region: underground-burrows)
  *  - 验证:
  *    - defeatedBossIds.length = 3
  *    - totalBossesDefeated = 3
@@ -147,7 +147,7 @@ describe('Phase 6E Golden Run E: 三 Boss 全部击败(SPEC §38)', () => {
     state = freshGameState();
   });
 
-  it('Step 1: 击败失落审判者 → totalBossesDefeated = 1', () => {
+  it('Step 1: 击败The Necromancer → totalBossesDefeated = 1', () => {
     state = fastDefeatBoss(state, ARBITER_BOSS_ID);
     expect(bossState(state, ARBITER_BOSS_ID).status).toBe('defeated');
     const ct = state.campaign!.campaignThreat!;
@@ -156,7 +156,7 @@ describe('Phase 6E Golden Run E: 三 Boss 全部击败(SPEC §38)', () => {
     expect(ct.finalCampaignGateReady).toBe(false);
   });
 
-  it('Step 2: 击败失落审判者 + 孢疫母巢 → totalBossesDefeated = 2', () => {
+  it('Step 2: 击败The Necromancer + The Hag → totalBossesDefeated = 2', () => {
     state = fastDefeatBoss(state, ARBITER_BOSS_ID);
     state = fastDefeatBoss(state, SPORE_BOSS_ID);
     const ct = state.campaign!.campaignThreat!;
@@ -207,8 +207,8 @@ describe('Phase 6E Golden Run E: 三 Boss 全部击败(SPEC §38)', () => {
       state = fastDefeatBoss(state, bossId);
     }
     expect(state.campaign!.regionThreats!['ruins'].state).toBe('boss-defeated');
-    expect(state.campaign!.regionThreats!['corrupted-woods'].state).toBe('boss-defeated');
-    expect(state.campaign!.regionThreats!['underground-burrows'].state).toBe('boss-defeated');
+    expect(state.campaign!.regionThreats!['weald'].state).toBe('boss-defeated');
+    expect(state.campaign!.regionThreats!['warrens'].state).toBe('boss-defeated');
   });
 
   it('Step 6: 顺序不影响结果(任何顺序击败 3 Boss 都能开 finalCampaignGateReady)', () => {
@@ -279,15 +279,15 @@ describe('Phase 6E Golden Run E: 不变量(SPEC §27)', () => {
     // 把 burrows 设为 100
     s = dispatchGameCommand(s, {
       type: 'DEBUG_SET_REGION_THREAT',
-      regionId: 'underground-burrows',
+      regionId: 'warrens',
       value: 100,
       commandId: newCommandId('test'),
     });
-    expect(s.campaign!.regionThreats!['underground-burrows'].threatValue).toBe(100);
+    expect(s.campaign!.regionThreats!['warrens'].threatValue).toBe(100);
     // 击败后下降到 40(clamp 100 - 60 = 40)
     s = fastDefeatBoss(s, BURROWS_BOSS_ID);
-    expect(s.campaign!.regionThreats!['underground-burrows'].threatValue).toBe(40);
-    expect(s.campaign!.regionThreats!['underground-burrows'].threatValue).toBeGreaterThanOrEqual(0);
-    expect(s.campaign!.regionThreats!['underground-burrows'].threatValue).toBeLessThanOrEqual(100);
+    expect(s.campaign!.regionThreats!['warrens'].threatValue).toBe(40);
+    expect(s.campaign!.regionThreats!['warrens'].threatValue).toBeGreaterThanOrEqual(0);
+    expect(s.campaign!.regionThreats!['warrens'].threatValue).toBeLessThanOrEqual(100);
   });
 });

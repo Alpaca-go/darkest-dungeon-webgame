@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Phase 6C Golden Run B 测试(SPEC §35)
  *
  * Seed: DD-WEB-PHASE6-WEAKEN-001
  *
- * 流程(用孢疫母巢,验证 6B 框架不是为 arbiter 硬编码):
+ * 流程(用The Hag,验证 6B 框架不是为 arbiter 硬编码):
  *  - 完成调查任务
  *  - 完成"净化外层菌床"削弱任务 → weaken-spore-mycelium
  *  - 完成"取得抗孢子药剂"削弱任务 → weaken-spore-immunity
@@ -73,7 +73,7 @@ function freshGameState(seed: string = SEED, week: number = 1): GameState {
       scoutLevel: 0,
       route: {
         id: 'route-1',
-        regionId: 'corrupted-woods',
+        regionId: 'weald',
         seed,
         startNodeId: 'node-1',
         objectiveNodeId: 'node-1',

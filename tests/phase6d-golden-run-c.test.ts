@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Phase 6D Golden Run C 测试(SPEC §36)
  *
  * Seed: DD-WEB-PHASE6-RETREAT-001
  *
- * 流程(用饥渊吞噬者,验证 6B 撤退框架对 burrows 真实生效):
+ * 流程(用The Swine Prince,验证 6B 撤退框架对 burrows 真实生效):
  *  - 忽略 burrows 调查任务 → 未获得任何 burrows 情报
  *  - 不携带战斗绷带
  *  - 直接进入最终讨伐(无削弱 + 无情报)
@@ -70,7 +70,7 @@ function freshGameState(seed: string = SEED, week: number = 1): GameState {
       scoutLevel: 0,
       route: {
         id: 'route-1',
-        regionId: 'underground-burrows',
+        regionId: 'warrens',
         seed,
         startNodeId: 'node-1',
         objectiveNodeId: 'node-1',
@@ -190,7 +190,7 @@ describe('Phase 6D Golden Run C: 错误准备 + 撤退成功流程', () => {
 
   it('Step 2: 撤退成功 → burrows 区域威胁 +20 + Boss 保留', () => {
     let state = reachActiveBoss(freshGameState());
-    const before = state.campaign!.regionThreats?.['underground-burrows']?.threatValue ?? 0;
+    const before = state.campaign!.regionThreats?.['warrens']?.threatValue ?? 0;
 
     // 阶段 0 基础 55% — 循环尝试直到成功(30 次内)
     let succeeded = false;
@@ -216,7 +216,7 @@ describe('Phase 6D Golden Run C: 错误准备 + 撤退成功流程', () => {
     expect(succeeded).toBe(true);
 
     // 验证:区域威胁 +20
-    const after = state.campaign!.regionThreats?.['underground-burrows']?.threatValue ?? 0;
+    const after = state.campaign!.regionThreats?.['warrens']?.threatValue ?? 0;
     expect(after - before).toBe(20);
 
     // 验证:Boss 状态回退到 revealed(attemptRetreat 成功 → 'revealed')

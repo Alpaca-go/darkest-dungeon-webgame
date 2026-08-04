@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Phase 7F 原创替换 + 发布前稳定化测试(SPEC §26 + §29)
  *
  * 验证产品代码(非测试)不含原作专属词:
@@ -165,7 +165,7 @@ describe('Phase 7F: Debug 事件不进入正式统计(SPEC §1.4)', () => {
         { type: 'DEBUG_SET_REGION_THREAT', debug: true },
       ],
       finalState: createEmptyFinalCampaignState(),
-      finalRegionName: '黑暗核心',
+      finalRegionName: 'The Darkest Dungeon',
       week: 30,
       graveyardHeroIds: [],
       usedHeroIds: [],

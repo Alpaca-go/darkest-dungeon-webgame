@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Phase 7C 最终 Boss + 结局 + 战役总结测试(SPEC §11 §14 §15)
  *
  * 覆盖:
@@ -187,7 +187,7 @@ describe('Phase 7C: 战役总结(SPEC §15)', () => {
         finalBossDefeated: true,
         destroyedSealIds: ['seal-a', 'seal-b', 'seal-c'],
       } as FinalCampaignState,
-      finalRegionName: '黑暗核心',
+      finalRegionName: 'The Darkest Dungeon',
       week: 50,
       graveyardHeroIds: ['h-dead-1', 'h-dead-2'],
       usedHeroIds: ['h-1', 'h-2', 'h-3'],
@@ -219,7 +219,7 @@ describe('Phase 7C: 战役总结(SPEC §15)', () => {
     expect(summary.mostDangerousDiseaseId).toBe('disease-disease');
     expect(summary.keyTurningPointEventIds.length).toBe(3);
     expect(summary.finalEndingType).toBe('victory');
-    expect(summary.finalRegionName).toBe('黑暗核心');
+    expect(summary.finalRegionName).toBe('The Darkest Dungeon');
     expect(summary.destroyedSealCount).toBe(3);
   });
 
@@ -231,7 +231,7 @@ describe('Phase 7C: 战役总结(SPEC §15)', () => {
         { type: 'DEBUG_SET_REGION_THREAT', debug: true },
       ],
       finalState: createEmptyFinalCampaignState(),
-      finalRegionName: '黑暗核心',
+      finalRegionName: 'The Darkest Dungeon',
       week: 30,
       graveyardHeroIds: [],
       usedHeroIds: [],
@@ -344,7 +344,7 @@ describe('Phase 7C: CampaignEnding 完整生成(SPEC §14)', () => {
           mostUsedPartyHeroIds: ['h-1', 'h-2'],
           keyTurningPointEventIds: [],
           finalEndingType: 'victory',
-          finalRegionName: '黑暗核心',
+          finalRegionName: 'The Darkest Dungeon',
           destroyedSealCount: 3,
         },
       },
