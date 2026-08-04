@@ -25,3 +25,19 @@ export {
   BOSS_TASKS,
   type BossTaskMeta,
 } from './registry.js';
+export {
+  BOSS_TRANSITIONS,
+  canTransition,
+  startInvestigation,
+  grantIntelligence,
+  completeInvestigationQuest,
+  completeWeakeningQuest,
+  unlockBossHunt,
+  startFinalQuest,
+  resolvePhaseTransition,
+  resolveDefeat,
+  resolveFailure,
+  attemptRetreat,
+  createEmptyBossCampaignState,
+  type BossReducerResult,
+} from './state-machine.js';

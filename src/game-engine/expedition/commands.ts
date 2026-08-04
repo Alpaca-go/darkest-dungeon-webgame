@@ -125,7 +125,38 @@ export type GameCommand =
   | { type: 'DEBUG_SET_REGION_LEVEL'; regionId: import('../regions/types.js').RegionId; level: number; commandId: string }
   | { type: 'DEBUG_FORCE_REGION_QUEST'; regionId: import('../regions/types.js').RegionId; commandId: string }
   | { type: 'DEBUG_FORCE_ELITE_NODE'; commandId: string }
-  | { type: 'DEBUG_EXPORT_REGION_PACKAGE'; commandId: string };
+  | { type: 'DEBUG_EXPORT_REGION_PACKAGE'; commandId: string }
+  // Phase 6 Boss 命令(SPEC §24)
+  | { type: 'START_BOSS_INVESTIGATION'; bossId: import('../boss/types.js').BossId; commandId: string }
+  | { type: 'GRANT_BOSS_INTELLIGENCE'; bossId: import('../boss/types.js').BossId; entryId: string; commandId: string }
+  | { type: 'COMPLETE_BOSS_INVESTIGATION_QUEST'; questId: string; commandId: string }
+  | { type: 'COMPLETE_BOSS_WEAKENING_QUEST'; questId: string; commandId: string }
+  | { type: 'UNLOCK_BOSS_HUNT'; bossId: import('../boss/types.js').BossId; commandId: string }
+  | { type: 'START_BOSS_FINAL_QUEST'; bossId: import('../boss/types.js').BossId; commandId: string }
+  | { type: 'ENTER_BOSS_ENCOUNTER'; bossId: import('../boss/types.js').BossId; commandId: string }
+  | { type: 'SELECT_BOSS_TACTICAL_OPTION'; decisionId: string; choiceId: string; commandId: string }
+  | { type: 'RESOLVE_BOSS_PHASE_TRANSITION'; bossId: import('../boss/types.js').BossId; commandId: string }
+  | { type: 'INTERACT_BOSS_ENVIRONMENT_TARGET'; targetId: string; choiceId: string; commandId: string }
+  | { type: 'ATTEMPT_BOSS_RETREAT'; bossId: import('../boss/types.js').BossId; commandId: string }
+  | { type: 'RESOLVE_BOSS_DEFEAT'; bossId: import('../boss/types.js').BossId; commandId: string }
+  | { type: 'RESOLVE_BOSS_FAILURE'; bossId: import('../boss/types.js').BossId; commandId: string }
+  // Phase 6 Boss 调试(SPEC §39)
+  | { type: 'DEBUG_SET_REGION_THREAT'; regionId: import('../regions/types.js').RegionId; value: number; commandId: string }
+  | { type: 'DEBUG_SET_REGION_THREAT_STATE'; regionId: import('../regions/types.js').RegionId; state: import('../boss/types.js').RegionThreatState; commandId: string }
+  | { type: 'DEBUG_SET_BOSS_STATUS'; bossId: import('../boss/types.js').BossId; status: import('../boss/types.js').BossStatus; commandId: string }
+  | { type: 'DEBUG_GRANT_BOSS_INTELLIGENCE'; bossId: import('../boss/types.js').BossId; entryId: string; commandId: string }
+  | { type: 'DEBUG_REMOVE_BOSS_INTELLIGENCE'; bossId: import('../boss/types.js').BossId; entryId: string; commandId: string }
+  | { type: 'DEBUG_COMPLETE_BOSS_QUEST'; questId: string; commandId: string }
+  | { type: 'DEBUG_ADD_BOSS_WEAKENING'; bossId: import('../boss/types.js').BossId; weakeningId: string; commandId: string }
+  | { type: 'DEBUG_REMOVE_BOSS_WEAKENING'; bossId: import('../boss/types.js').BossId; weakeningId: string; commandId: string }
+  | { type: 'DEBUG_UNLOCK_BOSS_HUNT'; bossId: import('../boss/types.js').BossId; commandId: string }
+  | { type: 'DEBUG_JUMP_BOSS_PHASE'; bossId: import('../boss/types.js').BossId; phaseIndex: number; commandId: string }
+  | { type: 'DEBUG_SET_BOSS_HP'; bossId: import('../boss/types.js').BossId; value: number; commandId: string }
+  | { type: 'DEBUG_FORCE_BOSS_SUMMON'; bossId: import('../boss/types.js').BossId; summonId: string; commandId: string }
+  | { type: 'DEBUG_FORCE_BOSS_PHASE_TRANSITION'; bossId: import('../boss/types.js').BossId; commandId: string }
+  | { type: 'DEBUG_FORCE_BOSS_RETREAT'; bossId: import('../boss/types.js').BossId; success: boolean; commandId: string }
+  | { type: 'DEBUG_FORCE_BOSS_DEFEAT'; bossId: import('../boss/types.js').BossId; commandId: string }
+  | { type: 'DEBUG_RESET_BOSS_STATE'; bossId: import('../boss/types.js').BossId; commandId: string };
 
 export type CommandType = GameCommand['type'];
 
