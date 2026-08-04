@@ -345,7 +345,7 @@ function applyCommand(ctx: ExpeditionContext, command: GameCommand): void {
     case 'DEBUG_SET_BOSS_HP':
       return cmdDebugSetBossHp(ctx, command.bossId, command.value, command.commandId);
     case 'DEBUG_FORCE_BOSS_SUMMON':
-      return; // 简化:6B 实现
+      return cmdDebugForceBossSummon(ctx, command.bossId, command.summonId, command.commandId);
     case 'DEBUG_FORCE_BOSS_PHASE_TRANSITION':
       return cmdResolveBossPhaseTransition(ctx, command.bossId, command.commandId);
     case 'DEBUG_FORCE_BOSS_RETREAT':
@@ -1894,6 +1894,13 @@ import {
   applyThreatDelta as thrApplyThreatDelta,
   applyBossDefeatThreatReduction as thrApplyBossDefeatThreatReduction,
 } from '../boss/threat.js';
+import {
+  initBossEncounter as encInitBossEncounter,
+  calcRetreatSuccessRate as encCalcRetreatSuccessRate,
+  applyRetreatSuccess as encApplyRetreatSuccess,
+  applyRetreatFailure as encApplyRetreatFailure,
+} from '../boss/encounter-resolver.js';
+import { Mulberry32 } from '../rng/mulberry32.js';
 
 // ---------- lazy ensure helpers ----------
 
@@ -2054,16 +2061,45 @@ function cmdInteractBossEnvironmentTarget(_ctx: ExpeditionContext, _targetId: st
 function cmdAttemptBossRetreat(ctx: ExpeditionContext, bossId: BossId, _commandId: string): void {
   void _commandId;
   if (!ctx.state.campaign) throw new Error('no campaign');
+  ensureAllBossState(ctx.state.campaign);
   const states = ensureBossStates(ctx.state.campaign);
   const boss = getBossOrThrow(ctx.state.campaign, bossId);
   const bossDef = BOSS_DEFINITIONS[bossId];
   if (!bossDef) throw new Error(`unknown boss definition: ${bossId}`);
-  // 6A 简化:60% 成功率(实际由 encounter-resolver 算)
-  const success = false; // 默认失败;具体由 encounter resolver 决定
-  const r = smAttemptRetreat(boss, success);
-  if (r.errors.length > 0) throw new Error(r.errors.join('; '));
-  states[bossId] = r.state;
-  ctx.emit('BOSS_RETREAT_ATTEMPTED', { bossId, attemptCount: r.state.retreatCount });
+
+  // 1) 拿 / 懒初始化 encounter state
+  let encounter = ctx.state.expedition.bossEncounterState;
+  if (!encounter) {
+    encounter = encInitBossEncounter(bossDef, 100, boss.activeWeakeningEffectIds);
+  }
+
+  // 2) 用 encounter-resolver 计算撤退成功率(阶段 modifier 已被应用)
+  const successRate = encCalcRetreatSuccessRate(bossDef, encounter.phaseIndex);
+  // 携带破咒圣物且未使用时,撤退成功率 +20%(per 阶段 2 tactic 描述)
+  const hasHolyRelic = (ctx.state.expedition.bossQuestItemIds ?? [])
+    .includes('item-test-holy-relic');
+  const finalRate = hasHolyRelic ? Math.min(1, successRate + 0.20) : successRate;
+
+  // 3) 用 Mulberry32 RNG 真实判定(推进 RNG 状态)
+  const rng = new Mulberry32(ctx.state.rng.state);
+  const success = rng.chance(finalRate);
+  ctx.state.rng = rng.state;
+
+  // 4) 更新 encounter state
+  if (success) {
+    encounter = encApplyRetreatSuccess(encounter, bossDef);
+  } else {
+    encounter = encApplyRetreatFailure(encounter);
+  }
+  ctx.state.expedition.bossEncounterState = encounter;
+
+  // 5) 更新 boss state(用 state-machine)
+  const smResult = smAttemptRetreat(boss, success);
+  if (smResult.errors.length > 0) throw new Error(smResult.errors.join('; '));
+  states[bossId] = smResult.state;
+
+  // 6) emit 事件
+  ctx.emit('BOSS_RETREAT_ATTEMPTED', { bossId, attemptCount: smResult.state.retreatCount });
   if (success) {
     ctx.emit('BOSS_RETREAT_SUCCEEDED', { bossId, threatIncrease: bossDef.retreatRules.threatIncrease });
     // 区域威胁增长
@@ -2082,7 +2118,7 @@ function cmdAttemptBossRetreat(ctx: ExpeditionContext, bossId: BossId, _commandI
       }
     }
   } else {
-    ctx.emit('BOSS_RETREAT_FAILED', { bossId, attemptCount: r.state.retreatCount });
+    ctx.emit('BOSS_RETREAT_FAILED', { bossId, attemptCount: smResult.state.retreatCount });
   }
 }
 
@@ -2227,33 +2263,101 @@ function cmdDebugRemoveBossWeakening(ctx: ExpeditionContext, bossId: BossId, wea
   };
 }
 
-function cmdDebugJumpBossPhase(_ctx: ExpeditionContext, _bossId: BossId, _phaseIndex: number, _commandId: string): void {
-  void _ctx;
-  void _bossId;
-  void _phaseIndex;
+function cmdDebugJumpBossPhase(ctx: ExpeditionContext, bossId: BossId, phaseIndex: number, _commandId: string): void {
   void _commandId;
-  // 6A 简化:phase 跳转由 encounter-resolver 控制
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  if (phaseIndex < 0 || phaseIndex > 2 || !Number.isInteger(phaseIndex)) {
+    throw new Error('phaseIndex must be 0, 1, or 2');
+  }
+  const bossDef = BOSS_DEFINITIONS[bossId];
+  if (!bossDef) throw new Error(`unknown boss: ${bossId}`);
+  const newPhaseId = bossDef.phaseDefinitionIds[phaseIndex];
+  if (!newPhaseId) throw new Error(`phase ${phaseIndex} not in boss definition`);
+  // 懒初始化 encounter
+  let encounter = ctx.state.expedition.bossEncounterState;
+  if (!encounter) {
+    const states = ensureBossStates(ctx.state.campaign);
+    const boss = getBossOrThrow(ctx.state.campaign, bossId);
+    encounter = encInitBossEncounter(bossDef, 100, boss.activeWeakeningEffectIds);
+    states[bossId] = { ...boss, status: 'active' };
+  }
+  ctx.state.expedition.bossEncounterState = {
+    ...encounter,
+    currentPhaseId: newPhaseId,
+    phaseIndex,
+  };
+  ctx.emit('BOSS_PHASE_TRANSITIONED', { bossId, fromPhase: encounter.phaseIndex, toPhase: phaseIndex });
+  ctx.emit('BOSS_PHASE_ENTERED', { bossId, phaseIndex });
 }
 
-function cmdDebugSetBossHp(_ctx: ExpeditionContext, _bossId: BossId, _value: number, _commandId: string): void {
-  void _ctx;
-  void _bossId;
-  void _value;
+function cmdDebugForceBossSummon(ctx: ExpeditionContext, bossId: BossId, summonId: string, _commandId: string): void {
   void _commandId;
-  // 6A 简化:boss HP 由 BossEncounterState 管理
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  const bossDef = BOSS_DEFINITIONS[bossId];
+  if (!bossDef) throw new Error(`unknown boss: ${bossId}`);
+  if (!bossDef.summonPoolIds.includes(summonId)) {
+    throw new Error(`summon ${summonId} not in boss pool ${bossDef.summonPoolIds.join(', ')}`);
+  }
+  // 懒初始化 encounter
+  let encounter = ctx.state.expedition.bossEncounterState;
+  if (!encounter) {
+    const states = ensureBossStates(ctx.state.campaign);
+    const boss = getBossOrThrow(ctx.state.campaign, bossId);
+    encounter = encInitBossEncounter(bossDef, 100, boss.activeWeakeningEffectIds);
+    states[bossId] = { ...boss, status: 'active' };
+  }
+  ctx.state.expedition.bossEncounterState = {
+    ...encounter,
+    summonEnemyIds: [...encounter.summonEnemyIds, summonId],
+  };
+}
+
+function cmdDebugSetBossHp(ctx: ExpeditionContext, bossId: BossId, value: number, _commandId: string): void {
+  void _commandId;
+  if (!ctx.state.campaign) throw new Error('no campaign');
+  if (value < 0 || !Number.isFinite(value)) {
+    throw new Error('boss HP must be a non-negative finite number');
+  }
+  const bossDef = BOSS_DEFINITIONS[bossId];
+  if (!bossDef) throw new Error(`unknown boss: ${bossId}`);
+  let encounter = ctx.state.expedition.bossEncounterState;
+  if (!encounter) {
+    const states = ensureBossStates(ctx.state.campaign);
+    const boss = getBossOrThrow(ctx.state.campaign, bossId);
+    encounter = encInitBossEncounter(bossDef, value, boss.activeWeakeningEffectIds);
+    states[bossId] = { ...boss, status: 'active' };
+  } else {
+    encounter = { ...encounter, bossHp: value };
+  }
+  ctx.state.expedition.bossEncounterState = encounter;
 }
 
 function cmdDebugForceBossRetreat(ctx: ExpeditionContext, bossId: BossId, success: boolean, _commandId: string): void {
   void _commandId;
   if (!ctx.state.campaign) throw new Error('no campaign');
+  ensureAllBossState(ctx.state.campaign);
   const states = ensureBossStates(ctx.state.campaign);
   const boss = getBossOrThrow(ctx.state.campaign, bossId);
+  const bossDef = BOSS_DEFINITIONS[bossId];
+  if (!bossDef) throw new Error(`unknown boss definition: ${bossId}`);
+  // encounter-resolver 路径
+  let encounter = ctx.state.expedition.bossEncounterState;
+  if (!encounter) {
+    encounter = encInitBossEncounter(bossDef, 100, boss.activeWeakeningEffectIds);
+  }
+  if (success) {
+    encounter = encApplyRetreatSuccess(encounter, bossDef);
+  } else {
+    encounter = encApplyRetreatFailure(encounter);
+  }
+  ctx.state.expedition.bossEncounterState = encounter;
+  // state-machine 路径
   const r = smAttemptRetreat(boss, success);
   if (r.errors.length > 0) throw new Error(r.errors.join('; '));
   states[bossId] = r.state;
   ctx.emit('BOSS_RETREAT_ATTEMPTED', { bossId, attemptCount: r.state.retreatCount });
   if (success) {
-    ctx.emit('BOSS_RETREAT_SUCCEEDED', { bossId, threatIncrease: 15 });
+    ctx.emit('BOSS_RETREAT_SUCCEEDED', { bossId, threatIncrease: bossDef.retreatRules.threatIncrease });
   } else {
     ctx.emit('BOSS_RETREAT_FAILED', { bossId, attemptCount: r.state.retreatCount });
   }

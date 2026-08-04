@@ -333,7 +333,7 @@ describe('Phase 6A: Boss 业务命令 dispatcher 集成', () => {
     expect(state.campaign!.campaignThreat?.defeatedBossIds).toContain('boss-test-arbiter');
   });
 
-  it('ATTEMPT_BOSS_RETREAT: 失败时 retreatCount+1 + emit BOSS_RETREAT_FAILED', () => {
+  it('ATTEMPT_BOSS_RETREAT: 真实判定(rng) + retreatCount+1 + emit ATTEMPTED', () => {
     state = dispatchGameCommand(state, {
       type: 'COMPLETE_BOSS_INVESTIGATION_QUEST',
       questId: 'task-test-investigate-1',
@@ -360,7 +360,11 @@ describe('Phase 6A: Boss 业务命令 dispatcher 集成', () => {
       commandId: newCommandId('test'),
     });
     expect(boss(state, 'boss-test-arbiter').retreatCount).toBe(1);
-    expect(bossEvents(state, 'BOSS_RETREAT_FAILED')).toBe(1);
+    expect(bossEvents(state, 'BOSS_RETREAT_ATTEMPTED')).toBe(1);
+    // 真实判定,可能 success 或 failure
+    const succeeded = bossEvents(state, 'BOSS_RETREAT_SUCCEEDED') > 0;
+    const failed = bossEvents(state, 'BOSS_RETREAT_FAILED') > 0;
+    expect(succeeded !== failed).toBe(true);
   });
 });
 
