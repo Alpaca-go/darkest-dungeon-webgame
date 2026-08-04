@@ -24,7 +24,7 @@ export const PARTY_LINEUP: { actor: BattleActor; skills: EquippedSkill[] }[] = [
   {
     actor: buildActor({
       id: 'hero.crusader',
-      name: 'Reynauld',
+      name: '阿瑟',
       archetype: 'crusader',
       rank: 1,
       maxHp: 33,
@@ -44,7 +44,7 @@ export const PARTY_LINEUP: { actor: BattleActor; skills: EquippedSkill[] }[] = [
   {
     actor: buildActor({
       id: 'hero.highwayman',
-      name: 'Dismas',
+      name: '凯恩',
       archetype: 'highwayman',
       rank: 2,
       maxHp: 25,
@@ -64,7 +64,7 @@ export const PARTY_LINEUP: { actor: BattleActor; skills: EquippedSkill[] }[] = [
   {
     actor: buildActor({
       id: 'hero.vestal',
-      name: 'Junia',
+      name: '莉娜',
       archetype: 'vestal',
       rank: 3,
       maxHp: 24,
@@ -84,7 +84,7 @@ export const PARTY_LINEUP: { actor: BattleActor; skills: EquippedSkill[] }[] = [
   {
     actor: buildActor({
       id: 'hero.plague_doctor',
-      name: 'Pox',
+      name: '洛',
       archetype: 'plague_doctor',
       rank: 4,
       maxHp: 22,

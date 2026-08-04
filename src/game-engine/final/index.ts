@@ -22,3 +22,4 @@ export * from './state-machine.js';
 export * from './registry.js';
 export * from './boss.js';
 export * from './ending.js';
+export * from './balance-report.js';

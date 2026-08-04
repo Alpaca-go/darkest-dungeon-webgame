@@ -94,10 +94,10 @@ export function ExpeditionPage() {
           <div className="loadout">
             <h3>默认队伍</h3>
             <ul>
-              <li>十字军 Reynauld</li>
-              <li>强盗 Dismas</li>
-              <li>修女 Junia</li>
-              <li>瘟疫医生 Pox</li>
+              <li>圣骑士 阿瑟</li>
+              <li>浪人 凯恩</li>
+              <li>祭司 莉娜</li>
+              <li>药使 洛</li>
             </ul>
             <div className="divider" />
             <h3>默认补给</h3>
