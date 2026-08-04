@@ -109,6 +109,41 @@ export const BOSS_TASKS: Record<string, BossTaskMeta> = {
     description: '沿菌丝小径下到地下母巢,在"母巢之心"前最后确认队伍抗病与压力状态,再进入三阶段孢子感染式 Boss 遭遇。',
     grantsIds: [],
   },
+  // ============================================================
+  // 6D:饥渊吞噬者(burrows-devourer)— underground-burrows
+  // ============================================================
+  'task-burrows-investigate-1': {
+    id: 'task-burrows-investigate-1',
+    bossId: 'boss-burrows-devourer',
+    type: 'investigation',
+    name: '调查地下储粮坑',
+    description: '沿兽穴的啃食痕迹下到地下深处,找到堆满旅行者残骸的储粮坑;在骨架上刻下"饥渊"二字,确认吞噬者正在坑中等待下一批猎物。',
+    grantsIds: ['intel-burrows-attack-1', 'intel-burrows-status-1', 'intel-burrows-phase-1'],
+  },
+  'task-burrows-weaken-1': {
+    id: 'task-burrows-weaken-1',
+    bossId: 'boss-burrows-devourer',
+    type: 'weakening',
+    name: '焚毁储粮巢穴',
+    description: '在兽穴中层找到饥渊的备用储粮穴,泼洒火油并点燃;储粮穴烧尽后,饥渊第一阶段无法再掠夺队伍食物,且每轮食物消耗 -2。',
+    grantsIds: ['weaken-burrows-food'],
+  },
+  'task-burrows-weaken-2': {
+    id: 'task-burrows-weaken-2',
+    bossId: 'boss-burrows-devourer',
+    type: 'weakening',
+    name: '杀死精英护卫',
+    description: '在兽穴入口处找到两只精英护卫"巨角地精",在 Boss 战前击杀;杀死后饥渊第二阶段无法再召唤精英护卫,玩家可直接跳过对护卫的处理。',
+    grantsIds: ['weaken-burrows-guard'],
+  },
+  'task-burrows-final-1': {
+    id: 'task-burrows-final-1',
+    bossId: 'boss-burrows-devourer',
+    type: 'final',
+    name: '饥渊吞噬者讨伐',
+    description: '沿血迹走完 8-12 个节点的 Boss 专属路线,在最后准备节点确认队伍食物与流血状态,再进入三阶段饥饿式 Boss 遭遇。',
+    grantsIds: [],
+  },
 };
 
 // =====================================================================
@@ -142,6 +177,23 @@ const SPORE_BOSS_RETREAT: BossRetreatRules = {
   stressPenalty: 5,
   threatIncrease: 18, // 孢子扩散 → 威胁涨得更多
   weakeningEffectLossRules: ['weaken-spore-immunity'], // 撤退后抗孢子药剂失效
+};
+
+/**
+ * 6D 饥渊吞噬者撤退规则(per dev §20.3)
+ * 基础 55%(三 Boss 最低;地下逃亡难度最高);
+ * 阶段 2 -45%(仅 10%,几乎无法撤)。
+ */
+const BURROWS_BOSS_RETREAT: BossRetreatRules = {
+  baseSuccessRate: 0.55,
+  phaseModifiers: {
+    0: 0,
+    1: -0.25,
+    2: -0.45,
+  },
+  stressPenalty: 10, // 流血后退役会更痛
+  threatIncrease: 20, // 食物掠夺 + 流血 → 威胁涨得最多
+  weakeningEffectLossRules: ['weaken-burrows-food'], // 撤退后储粮削弱失效
 };
 
 // =====================================================================
@@ -319,6 +371,104 @@ export const BOSS_ENVIRONMENT_TARGETS: Record<string, BossEnvironmentTargetDefin
           { kind: 'inc-flag', flagName: 'env_sac_ignored', amount: 1 },
         ],
         riskTags: ['recurring-damage'],
+      },
+    ],
+  },
+  // ============================================================
+  // 6D 饥渊吞噬者环境目标
+  // ============================================================
+  'env-burrows-food-pit': {
+    id: 'env-burrows-food-pit',
+    bossId: 'boss-burrows-devourer',
+    name: '储粮坑',
+    description: '饥渊的备用食物储藏地,堆满旅行者残骸与干货;饥渊每 2 轮从中掠夺 1 份食物,直到储粮坑被焚毁。坑中藏着 7 天的口粮,足以让一支队伍饿死。',
+    hp: 30,
+    stateTags: ['food-source', 'loot-rich', 'burrows-only'],
+    activeEffects: [
+      { kind: 'inc-flag', flagName: 'boss_food_raided', amount: 1, narrativeHint: '饥渊从储粮坑中掠夺食物' },
+    ],
+    destroyEffects: [
+      { kind: 'clear-flag', flagName: 'boss_food_raided' },
+      { kind: 'apply-stress', amount: 4, heroSelector: 'all-alive', narrativeHint: '储粮坑崩塌,残骸飞舞' },
+    ],
+    interactChoices: [
+      {
+        id: 'env-pit-burn',
+        title: '用火油焚烧储粮坑',
+        description: '让前排英雄泼洒火油并点燃储粮坑;火势会反噬前排,但彻底断绝饥渊的食物来源。',
+        conditions: [],
+        effects: [
+          { kind: 'hp-delta', amount: -10, heroSelector: 'front-rank', narrativeHint: '火势反噬前排' },
+          { kind: 'inc-flag', flagName: 'env_pit_burned', amount: 1 },
+        ],
+        riskTags: ['frontline-risk', 'fire-damage'],
+      },
+      {
+        id: 'env-pit-seal',
+        title: '用圣物封锁储粮坑',
+        description: '消耗"储粮焚毁圣物",直接封死储粮坑活性,无需前线冒险。',
+        conditions: [],
+        effects: [
+          { kind: 'inc-flag', flagName: 'env_pit_sealed', amount: 1 },
+        ],
+        riskTags: ['consume-boss-item'],
+      },
+      {
+        id: 'env-pit-skip',
+        title: '暂不处理储粮坑',
+        description: '跳过本轮环境交互,继续攻击饥渊;但饥渊会继续从坑中掠夺食物。',
+        conditions: [],
+        effects: [
+          { kind: 'inc-flag', flagName: 'env_pit_skipped', amount: 1 },
+        ],
+        riskTags: ['miss-environment-window', 'food-loss'],
+      },
+    ],
+  },
+  'env-burrows-corpse-pile': {
+    id: 'env-burrows-corpse-pile',
+    bossId: 'boss-burrows-devourer',
+    name: '尸体堆',
+    description: '兽穴深处由数百具旅行者遗骸堆成的小山,饥渊从其中召出精英护卫"巨角地精";堆中存在一只未腐的护身符,可能与削弱任务相关。',
+    hp: 20,
+    stateTags: ['summon-source', 'horror', 'burrows-only'],
+    activeEffects: [
+      { kind: 'set-flag', flagName: 'boss_guard_summon_active', flagValue: true },
+    ],
+    destroyEffects: [
+      { kind: 'clear-flag', flagName: 'boss_guard_summon_active' },
+      { kind: 'hp-delta', amount: -3, heroSelector: 'all-alive', narrativeHint: '尸体堆崩塌,骨头乱飞' },
+    ],
+    interactChoices: [
+      {
+        id: 'env-corpse-clean',
+        title: '清理尸体堆',
+        description: '让前排英雄清理尸体堆,本轮全员受到 3 HP 但饥渊失去精英护卫召唤。',
+        conditions: [],
+        effects: [
+          { kind: 'inc-flag', flagName: 'env_corpse_cleared', amount: 1 },
+        ],
+        riskTags: ['party-damage', 'horror'],
+      },
+      {
+        id: 'env-corpse-search',
+        title: '搜索尸体堆找护身符',
+        description: '在尸体堆中搜索,可能找到有用的护身符;但搜寻过程会触发护卫警告,饥渊将立即召唤精英护卫。',
+        conditions: [],
+        effects: [
+          { kind: 'set-flag', flagName: 'boss_guard_immediate_summon', flagValue: true },
+        ],
+        riskTags: ['immediate-summon', 'horror'],
+      },
+      {
+        id: 'env-corpse-ignore',
+        title: '绕开尸体堆',
+        description: '忽略尸体堆继续攻击饥渊;每轮饥渊有 50% 概率从中召出精英护卫。',
+        conditions: [],
+        effects: [
+          { kind: 'inc-flag', flagName: 'env_corpse_ignored', amount: 1 },
+        ],
+        riskTags: ['recurring-summon'],
       },
     ],
   },
@@ -562,6 +712,121 @@ export const BOSS_INTELLIGENCE: Record<string, BossIntelligenceEntry> = {
       { kind: 'set-flag', flagName: 'intel_known_retreat', flagValue: true },
     ],
   },
+  // ============================================================
+  // 6D 饥渊吞噬者情报(8 条)
+  // ============================================================
+  'intel-burrows-attack-1': {
+    id: 'intel-burrows-attack-1',
+    bossId: 'boss-burrows-devourer',
+    title: '撕裂獠牙',
+    category: 'attack-pattern',
+    summary: '饥渊用獠牙撕裂前排,造成 HP 损失 + 流血。',
+    revealedDetail: '饥渊每 2 轮释放一次"撕裂獠牙",对前排最低 HP 英雄造成 5 HP 损失 + 3 轮流血(每轮 2 HP);携带战斗绷带可在流血触发时立即止血,或由"抗流血"tag 职业将流血持续时间减半。',
+    unlockSources: [
+      { type: 'investigation-quest', sourceId: 'task-burrows-investigate-1' },
+    ],
+    gameplayEffects: [
+      { kind: 'set-flag', flagName: 'intel_known_撕裂獠牙', flagValue: true },
+    ],
+  },
+  'intel-burrows-attack-2': {
+    id: 'intel-burrows-attack-2',
+    bossId: 'boss-burrows-devourer',
+    title: '吞噬吞噬',
+    category: 'attack-pattern',
+    summary: '饥渊直接吞噬前排英雄的部分食物,造成饥饿状态。',
+    revealedDetail: '饥渊每 3 轮发动"吞噬吞噬",对前排 2 名英雄各 -2 食物,持续 2 轮饥饿(每轮额外 -1 HP);带"饱腹"或"干粮"tag 的职业可提前防御,损失减半。',
+    unlockSources: [
+      { type: 'elite-encounter', sourceId: 'elite-巨角地精' },
+    ],
+    gameplayEffects: [
+      { kind: 'set-flag', flagName: 'intel_known_吞噬吞噬', flagValue: true },
+    ],
+  },
+  'intel-burrows-status-1': {
+    id: 'intel-burrows-status-1',
+    bossId: 'boss-burrows-devourer',
+    title: '饥饿狂潮',
+    category: 'status-threat',
+    summary: '食物 < 50% 时饥渊进入狂潮状态,所有攻击加强。',
+    revealedDetail: '当队伍食物 < 50% 时,饥渊进入"饥饿狂潮"状态:每轮额外 +1 HP 损失到全员,流血持续时间 +1 轮;携带"储粮焚毁圣物"或完成削弱"焚毁储粮巢穴"可压制狂潮,不再触发。',
+    unlockSources: [
+      { type: 'investigation-quest', sourceId: 'task-burrows-investigate-1' },
+    ],
+    gameplayEffects: [
+      { kind: 'set-flag', flagName: 'intel_known_饥饿狂潮', flagValue: true },
+    ],
+  },
+  'intel-burrows-phase-1': {
+    id: 'intel-burrows-phase-1',
+    bossId: 'boss-burrows-devourer',
+    title: '阶段 1:饥饿狂潮',
+    category: 'phase-mechanic',
+    summary: '饥渊进入第二阶段会从尸体堆召出精英护卫。',
+    revealedDetail: '进入第二阶段立即从尸体堆召出 1 个精英护卫"巨角地精",之后每 3 轮召唤 1 个,直到尸体堆被清理;若已完成削弱任务"杀死精英护卫",第二阶段跳过召唤,直接进入吞噬阶段。',
+    unlockSources: [
+      { type: 'first-phase-encounter', sourceId: 'boss-burrows-devourer-phase-1' },
+    ],
+    gameplayEffects: [
+      { kind: 'set-flag', flagName: 'intel_known_phase1', flagValue: true },
+    ],
+  },
+  'intel-burrows-phase-2': {
+    id: 'intel-burrows-phase-2',
+    bossId: 'boss-burrows-devourer',
+    title: '阶段 2:吞噬一切',
+    category: 'phase-mechanic',
+    summary: '饥渊进入第三阶段吞噬剩余储粮坑,所有英雄持续流血。',
+    revealedDetail: '第三阶段每轮 100% 释放"吞噬一切":对全员施加 6 HP 损失 + 5 轮流血;HP < 25% 的英雄直接进入死亡之门。该阶段只持续 3 轮,玩家必须在前 2 轮内打出决定性伤害。',
+    unlockSources: [
+      { type: 'first-boss-failure', sourceId: 'boss-burrows-devourer' },
+    ],
+    gameplayEffects: [
+      { kind: 'set-flag', flagName: 'intel_known_phase2', flagValue: true },
+    ],
+  },
+  'intel-burrows-env-1': {
+    id: 'intel-burrows-env-1',
+    bossId: 'boss-burrows-devourer',
+    title: '储粮坑结构弱点',
+    category: 'environment-target',
+    summary: '储粮坑有 3 处木质支撑柱,泼洒火油并点燃能彻底烧断。',
+    revealedDetail: '储粮坑底部连接地面的木质支撑柱有 3 处暴露点,泼洒火油并点燃可彻底烧断;但火势会反噬前排英雄 10 HP。若携带"储粮焚毁圣物",可直接封死储粮坑,无需前线冒险。',
+    unlockSources: [
+      { type: 'special-curio', sourceId: 'curio-地精守护者笔记' },
+    ],
+    gameplayEffects: [
+      { kind: 'set-flag', flagName: 'intel_known_env_food_pit', flagValue: true },
+    ],
+  },
+  'intel-burrows-provision-1': {
+    id: 'intel-burrows-provision-1',
+    bossId: 'boss-burrows-devourer',
+    title: '战斗绷带储备',
+    category: 'recommended-provision',
+    summary: '战斗绷带能立即止血,建议至少带 4 卷。',
+    revealedDetail: '战斗绷带是唯一可在 Boss 战内主动解除"流血"状态的补给,使用后立即清除被锁定英雄身上的所有流血;未带绷带时只能依赖"抗流血"职业或硬扛 3 轮每轮 2 HP 流血。',
+    unlockSources: [
+      { type: 'class-analysis', sourceId: 'class-arbalest' },
+    ],
+    gameplayEffects: [
+      { kind: 'set-flag', flagName: 'intel_known_provision', flagValue: true },
+    ],
+  },
+  'intel-burrows-retreat-1': {
+    id: 'intel-burrows-retreat-1',
+    bossId: 'boss-burrows-devourer',
+    title: '吞噬窗口收窄',
+    category: 'retreat-risk',
+    summary: 'Boss 进入第三阶段后撤退几乎无望。',
+    revealedDetail: '阶段 0 撤退成功率 55%(默认),阶段 1 降至 30%,阶段 2 仅 10%(几近无望);撤退成功后,削弱任务"焚毁储粮巢穴"的效果会失效(直到下次挑战前不再生效),但"杀死精英护卫"永久保留。',
+    unlockSources: [
+      { type: 'first-boss-failure', sourceId: 'boss-burrows-devourer' },
+    ],
+    gameplayEffects: [
+      { kind: 'set-flag', flagName: 'intel_known_retreat', flagValue: true },
+    ],
+  },
 };
 
 // =====================================================================
@@ -645,6 +910,62 @@ export const BOSS_WEAKENING_EFFECTS: Record<string, BossWeakeningEffect> = {
       },
     ],
     encounterModifiers: [],
+    routeModifiers: [],
+    persistence: 'until-boss-defeated',
+  },
+  // ============================================================
+  // 6D 饥渊吞噬者削弱效果
+  // ============================================================
+  'weaken-burrows-food': {
+    id: 'weaken-burrows-food',
+    bossId: 'boss-burrows-devourer',
+    sourceQuestId: 'task-burrows-weaken-1',
+    name: '焚毁储粮巢穴',
+    description: '兽穴的储粮坑和尸体堆被先遣队纵火焚毁,吞噬者第二阶段"饥饿狂潮"召唤精英护卫时只能召出 1 只(默认 2 只),且精英护卫攻击力 -25%。注意:撤退成功后此削弱会失效,需重新准备。',
+    phaseModifiers: [
+      {
+        phaseIndex: 1,
+        modifiers: [
+          { kind: 'set-flag', flagName: 'boss_food_destroyed', flagValue: true },
+          { kind: 'set-flag', flagName: 'boss_guard_count', flagValue: 1 },
+          { kind: 'set-flag', flagName: 'boss_guard_attack_reduction', flagValue: 0.25 },
+        ],
+      },
+    ],
+    encounterModifiers: [
+      { kind: 'clear-flag', flagName: 'boss_food_destroyed' },
+      { kind: 'clear-flag', flagName: 'boss_guard_count' },
+      { kind: 'clear-flag', flagName: 'boss_guard_attack_reduction' },
+    ],
+    routeModifiers: [],
+    persistence: 'until-boss-defeated',
+  },
+  'weaken-burrows-guard': {
+    id: 'weaken-burrows-guard',
+    bossId: 'boss-burrows-devourer',
+    sourceQuestId: 'task-burrows-weaken-2',
+    name: '杀死精英护卫',
+    description: '派遣暗杀小队从背后刺杀吞噬者的精英护卫;Boss 战不再自动召唤精英护卫,且前排受到的"撕裂獠牙"伤害 -5 HP。注意:撤退成功后此削弱会失效,需重新准备。',
+    phaseModifiers: [
+      {
+        phaseIndex: 1,
+        modifiers: [
+          { kind: 'set-flag', flagName: 'boss_no_guard_summon', flagValue: true },
+          { kind: 'set-flag', flagName: 'boss_tusk_damage_reduction', flagValue: 5 },
+        ],
+      },
+      {
+        phaseIndex: 2,
+        modifiers: [
+          { kind: 'set-flag', flagName: 'boss_no_guard_summon', flagValue: true },
+          { kind: 'set-flag', flagName: 'boss_tusk_damage_reduction', flagValue: 5 },
+        ],
+      },
+    ],
+    encounterModifiers: [
+      { kind: 'clear-flag', flagName: 'boss_no_guard_summon' },
+      { kind: 'clear-flag', flagName: 'boss_tusk_damage_reduction' },
+    ],
     routeModifiers: [],
     persistence: 'until-boss-defeated',
   },
@@ -1102,6 +1423,228 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
       },
     ],
   },
+  // ============================================================
+  // 6D 饥渊吞噬者阶段定义(3 个)
+  // ============================================================
+  'phase-burrows-0': {
+    id: 'phase-burrows-0',
+    bossId: 'boss-burrows-devourer',
+    phaseIndex: 0,
+    name: '潜伏捕食',
+    description: '吞噬者潜伏在兽穴深处,只在英雄接近时发动"撕裂獠牙"突袭;环境目标储粮坑和尸体堆显现,玩家可在本阶段先观察情报,或选择用火油纵火烧毁储粮(需前排冒险)。',
+    enterConditions: [
+      { kind: 'flag-exists', flagName: 'boss_encounter_active' },
+    ],
+    exitConditions: [
+      { kind: 'flag-gte', flagName: 'boss_phase_rounds', value: 3 },
+    ],
+    bossModifiers: [
+      { kind: 'set-flag', flagName: 'boss_ambush_stance', flagValue: true },
+    ],
+    environmentTargetIds: ['env-burrows-food-pit', 'env-burrows-corpse-pile'],
+    summonRules: [],
+    tacticalOptionRules: [
+      {
+        id: 'tactic-burrows-p0-probe',
+        title: '试探性攻击',
+        description: '前排试探吞噬者,确认"撕裂獠牙"的节奏;适合情报尚不完整、需要数据收集的首次挑战。',
+        conditions: [],
+        weight: 1.0,
+        category: 'attack-core',
+        phaseIndex: 0,
+        effects: [
+          { kind: 'hp-delta', amount: 5, heroSelector: 'front-rank' },
+          { kind: 'inc-flag', flagName: 'boss_phase_rounds', amount: 1 },
+        ],
+        riskTags: ['frontline-risk', 'ambush'],
+      },
+      {
+        id: 'tactic-burrows-p0-env',
+        title: '焚毁储粮坑',
+        description: '派前排冒险用火油纵火储粮坑,本轮全员受到 5 HP + 8 压力,但储粮削弱生效(阶段 1 精英护卫只召 1 只 + 攻击 -25%)。',
+        conditions: [],
+        weight: 0.7,
+        category: 'destroy-environment',
+        phaseIndex: 0,
+        effects: [
+          { kind: 'inc-flag', flagName: 'env_food_pit_burned', amount: 1 },
+          { kind: 'inc-flag', flagName: 'boss_phase_rounds', amount: 1 },
+        ],
+        riskTags: ['party-damage', 'stress-burst'],
+      },
+      {
+        id: 'tactic-burrows-p0-bandage',
+        title: '使用战斗绷带',
+        description: '后排在掩体后紧急包扎前排伤口,本轮全员 -3 HP + -5 压力;适合前排血线低于 30% 时。消耗 1 个"战斗绷带"任务物品。',
+        conditions: [],
+        weight: 0.5,
+        category: 'stabilize-stress',
+        phaseIndex: 0,
+        effects: [
+          { kind: 'apply-stress', amount: -5, heroSelector: 'all-alive' },
+          { kind: 'inc-flag', flagName: 'boss_phase_rounds', amount: 1 },
+        ],
+        riskTags: ['consume-item'],
+      },
+    ],
+    phaseEvents: [
+      {
+        trigger: 'enter',
+        effects: [
+          { kind: 'set-flag', flagName: 'boss_encounter_active', flagValue: true },
+        ],
+        narrativeHint: 'Boss 战开始:饥渊吞噬者潜伏于兽穴深处',
+      },
+    ],
+  },
+  'phase-burrows-1': {
+    id: 'phase-burrows-1',
+    bossId: 'boss-burrows-devourer',
+    phaseIndex: 1,
+    name: '饥饿狂潮',
+    description: '吞噬者从储粮坑中召唤精英护卫(默认 2 只,被削弱后只召 1 只),玩家必须先清理护卫才能近身攻击吞噬者本体;精英护卫对前排造成"撕裂獠牙"额外 +5 HP 伤害。',
+    enterConditions: [
+      { kind: 'flag-gte', flagName: 'boss_phase_rounds', value: 3 },
+    ],
+    exitConditions: [
+      { kind: 'flag-gte', flagName: 'boss_phase_rounds', value: 6 },
+    ],
+    bossModifiers: [
+      { kind: 'set-flag', flagName: 'boss_hunger_frenzy', flagValue: true },
+    ],
+    environmentTargetIds: [],
+    summonRules: [
+      {
+        summonId: 'summon-精英护卫',
+        maxPerPhase: 2,
+        modifiers: [
+          { kind: 'set-flag', flagName: 'boss_guard_count', flagValue: 2 },
+        ],
+        trigger: { kind: 'flag-exists', flagName: 'boss_summon_phase' },
+      },
+    ],
+    tacticalOptionRules: [
+      {
+        id: 'tactic-burrows-p1-focus-guard',
+        title: '集中击杀护卫',
+        description: '全员集火一只精英护卫,2 轮内必杀;若携带"战斗绷带"则可边打边回血,适合压力中等的稳健队。',
+        conditions: [],
+        weight: 1.0,
+        category: 'handle-summon',
+        phaseIndex: 1,
+        effects: [
+          { kind: 'inc-flag', flagName: 'boss_guard_killed', amount: 1 },
+          { kind: 'inc-flag', flagName: 'boss_phase_rounds', amount: 1 },
+        ],
+        riskTags: ['guard-tank', 'skip-boss-damage'],
+      },
+      {
+        id: 'tactic-burrows-p1-purifier',
+        title: '使用储粮焚毁圣物',
+        description: '本轮一次性封印储粮坑召唤源,本阶段不再自动召唤护卫;消耗 1 个"储粮焚毁圣物"任务物品。',
+        conditions: [],
+        weight: 0.6,
+        category: 'destroy-environment',
+        phaseIndex: 1,
+        effects: [
+          { kind: 'set-flag', flagName: 'boss_food_destroyed', flagValue: true },
+          { kind: 'inc-flag', flagName: 'boss_phase_rounds', amount: 1 },
+        ],
+        riskTags: ['consume-item'],
+      },
+      {
+        id: 'tactic-burrows-p1-all-in',
+        title: '硬吃护卫直取本体',
+        description: '无视护卫,全员直取吞噬者本体;本轮全员压力 +6,护卫会在回合末反击,前排再 -8 HP。',
+        conditions: [],
+        weight: 0.4,
+        category: 'attack-core',
+        phaseIndex: 1,
+        effects: [
+          { kind: 'hp-delta', amount: 8, heroSelector: 'front-rank' },
+          { kind: 'apply-stress', amount: 6, heroSelector: 'all-alive' },
+        ],
+        riskTags: ['frontline-risk', 'all-in'],
+      },
+    ],
+    phaseEvents: [
+      {
+        trigger: 'enter',
+        effects: [
+          { kind: 'set-flag', flagName: 'boss_summon_phase', flagValue: true },
+        ],
+        narrativeHint: '第二阶段:饥饿狂潮,精英护卫被召唤',
+      },
+    ],
+  },
+  'phase-burrows-2': {
+    id: 'phase-burrows-2',
+    bossId: 'boss-burrows-devourer',
+    phaseIndex: 2,
+    name: '吞噬一切',
+    description: '吞噬者进入吞噬姿态,对前排施加持续流血(每轮 4 HP);每轮释放"吞咽"技能:后排 -10 HP + 8 压力。玩家必须在前 2 轮打出足够伤害,否则全员都会陷入持续流血。',
+    enterConditions: [
+      { kind: 'flag-gte', flagName: 'boss_phase_rounds', value: 6 },
+    ],
+    exitConditions: [],
+    bossModifiers: [
+      { kind: 'set-flag', flagName: 'boss_devour_active', flagValue: true },
+      { kind: 'set-flag', flagName: 'boss_bleed_active', flagValue: 4 },
+    ],
+    environmentTargetIds: [],
+    summonRules: [],
+    tacticalOptionRules: [
+      {
+        id: 'tactic-burrows-p2-all-in',
+        title: '孤注一掷',
+        description: '无视一切,全力攻击吞噬者本体;本轮全员压力 +6,但能在第 2 轮结束前打出决定性伤害。',
+        conditions: [],
+        weight: 1.0,
+        category: 'attack-core',
+        phaseIndex: 2,
+        effects: [
+          { kind: 'hp-delta', amount: 15, heroSelector: 'all-alive' },
+          { kind: 'apply-stress', amount: 6, heroSelector: 'all-alive' },
+        ],
+        riskTags: ['all-in', 'high-stress'],
+      },
+      {
+        id: 'tactic-burrows-p2-protect',
+        title: '保护后排',
+        description: '让前排护住后排,本轮后排 -0 HP,前排 -5 HP;适合队伍已经过半濒死、需要稳定下来的情况。',
+        conditions: [],
+        weight: 0.6,
+        category: 'protect-hero',
+        phaseIndex: 2,
+        effects: [
+          { kind: 'hp-delta', amount: -5, heroSelector: 'front-rank' },
+        ],
+        riskTags: ['frontline-tank', 'skip-boss-damage'],
+      },
+      {
+        id: 'tactic-burrows-p2-retreat',
+        title: '尝试撤退',
+        description: '在吞噬者暴走下撤退,基础成功率仅 10%(持续流血 + 饥饿压迫);若携带"战斗绷带"且未使用,撤退成功率 +15%。撤退后所有 burrows 削弱失效。',
+        conditions: [],
+        weight: 0.3,
+        category: 'retreat',
+        phaseIndex: 2,
+        effects: [
+          { kind: 'set-flag', flagName: 'boss_retreat_requested', flagValue: true },
+        ],
+        riskTags: ['retreat'],
+      },
+    ],
+    phaseEvents: [
+      {
+        trigger: 'enter',
+        effects: [
+          { kind: 'set-flag', flagName: 'boss_final_phase', flagValue: true },
+        ],
+        narrativeHint: '第三阶段:吞噬者开始吞噬一切,持续流血 + 吞咽技能激活',
+      },
+    ],
+  },
 };
 
 // =====================================================================
@@ -1135,6 +1678,21 @@ export const BOSS_PERMANENT_REWARDS: Record<string, BossPermanentReward> = {
     ],
     unlockedTrinketIds: ['trinket-母巢之眼'],
     unlockedQuestModifierIds: ['modifier-菌丝共生'],
+  },
+  // ============================================================
+  // 6D 饥渊吞噬者永久奖励
+  // ============================================================
+  'reward-burrows-devourer': {
+    id: 'reward-burrows-devourer',
+    bossId: 'boss-burrows-devourer',
+    name: '饥饿者的记忆',
+    description: '击败饥渊吞噬者后,玩家获得"吞噬者之牙"饰品,兽穴区域食物消耗 -25%、前排警戒 +15%;并解锁"饥饿本能"任务修正词(后续任务每场 +2 食物获得)。遗产不会被重复领取(SPEC §27)。',
+    campaignModifiers: [
+      { kind: 'set-flag', flagName: 'burrows_food_consumption', flagValue: -0.25 },
+      { kind: 'set-flag', flagName: 'burrows_scouting_bonus', flagValue: 0.15 },
+    ],
+    unlockedTrinketIds: ['trinket-吞噬者之牙'],
+    unlockedQuestModifierIds: ['modifier-饥饿本能'],
   },
 };
 
@@ -1184,6 +1742,29 @@ export const BOSS_QUEST_ITEMS: Record<string, BossQuestItemDefinition> = {
     inventorySlots: 1,
     availableInFinalEncounter: true,
     tacticalChoiceIds: ['tactic-spore-p1-seal'],
+    consumeOnUse: true,
+  },
+  // ============================================================
+  // 6D 饥渊吞噬者特殊任务物品
+  // ============================================================
+  'item-burrows-bandage': {
+    id: 'item-burrows-bandage',
+    bossId: 'boss-burrows-devourer',
+    name: '战斗绷带',
+    description: '由地下城医师用兽穴药草浸泡的棉布绷带,染有吞噬者唾液的暗红;在 Boss 战可使用,本轮 -5 压力 + 3 HP;若用于撤退判定则 +15% 成功率。建议至少带 2 绷带应对阶段 1 + 阶段 2。',
+    inventorySlots: 1,
+    availableInFinalEncounter: true,
+    tacticalChoiceIds: ['tactic-burrows-p0-bandage', 'tactic-burrows-p2-retreat'],
+    consumeOnUse: true,
+  },
+  'item-burrows-purifier': {
+    id: 'item-burrows-purifier',
+    bossId: 'boss-burrows-devourer',
+    name: '储粮焚毁圣物',
+    description: '从兽穴深处猎人处获得的石罐,内含燃烧缓慢的炼金油;在 Boss 战可一次性封印储粮坑召唤源(无需前线冒险),本阶段不再自动召唤精英护卫;撤退成功后此物仍保留。',
+    inventorySlots: 1,
+    availableInFinalEncounter: true,
+    tacticalChoiceIds: ['tactic-burrows-p1-purifier'],
     consumeOnUse: true,
   },
 };
@@ -1243,6 +1824,33 @@ export const BOSS_DEFINITIONS: Record<string, BossDefinition> = {
     retreatRules: SPORE_BOSS_RETREAT,
     rewardTableId: 'reward-spore-matriarch',
     permanentRewardId: 'reward-spore-matriarch',
+  },
+  // ============================================================
+  // 6D 饥渊吞噬者
+  // ============================================================
+  'boss-burrows-devourer': {
+    id: 'boss-burrows-devourer',
+    name: '饥渊吞噬者',
+    regionId: 'underground-burrows',
+    description: '潜伏在地下兽穴深处的巨型掠食者,体长 6 米,长有 4 排撕裂獠牙;它以兽穴储粮为生,会召唤精英护卫围猎入侵者。核心威胁:撕裂獠牙 + 食物掠夺 + 流血 + 近距离压迫 + 阵型打乱;玩家通过情报 + 削弱任务 + 食物管理,改变 Boss 战的多个关键节点。',
+    threatTags: ['bleed', 'food-drain', 'frontline-pressure', 'summon-guard', 'formation-break'],
+    recommendedHeroTags: ['frontline-tank', 'anti-bleed', 'high-damage', 'food-efficient'],
+    recommendedProvisionIds: ['item-burrows-bandage', 'item-burrows-purifier'],
+    recommendedTrinketTags: ['anti-bleed', 'food-efficient', 'frontline-resist'],
+    intelligenceEntryIds: [
+      'intel-burrows-attack-1', 'intel-burrows-attack-2', 'intel-burrows-status-1',
+      'intel-burrows-phase-1', 'intel-burrows-phase-2',
+      'intel-burrows-env-1', 'intel-burrows-provision-1', 'intel-burrows-retreat-1',
+    ],
+    investigationQuestIds: ['task-burrows-investigate-1'],
+    weakeningQuestIds: ['task-burrows-weaken-1', 'task-burrows-weaken-2'],
+    finalQuestId: 'task-burrows-final-1',
+    phaseDefinitionIds: ['phase-burrows-0', 'phase-burrows-1', 'phase-burrows-2'],
+    environmentTargetIds: ['env-burrows-food-pit', 'env-burrows-corpse-pile'],
+    summonPoolIds: ['summon-精英护卫'],
+    retreatRules: BURROWS_BOSS_RETREAT,
+    rewardTableId: 'reward-burrows-devourer',
+    permanentRewardId: 'reward-burrows-devourer',
   },
 };
 
