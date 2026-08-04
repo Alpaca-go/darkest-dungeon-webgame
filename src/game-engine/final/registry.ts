@@ -39,19 +39,19 @@ const DARKEST_CORE_RETREAT: FinalRegionRetreatRules = {
 export const FINAL_REGIONS: Record<string, FinalRegionDefinition> = {
   'darkest-core': {
     id: 'darkest-core',
-    name: '黑暗核心',
-    description: '家族血脉之源,被祖先唤醒的最终黑暗在核心等待。穿越外层、摧毁核心封印、最终讨伐。无光王座的心脏——那里是先祖之罪的起源与终结。',
+    name: 'The Darkest Dungeon',
+    description: '家族血脉之源,被祖先唤醒的最终黑暗在核心等待。Traverse the Foothills、摧毁核心封印、Final Assault。无光王座的心脏——那里是先祖之罪的起源与终结。',
     unlockConditionIds: [
       'campaign.finalCampaignGateReady',
       'campaign.defeatedBossIds.length===3',
     ],
     questChainIds: [
       'quest-darkest-core-gate-1', // 开启入口
-      'quest-darkest-core-outer-1', // 穿越外层
+      'quest-darkest-core-outer-1', // Traverse the Foothills
       'quest-darkest-core-seal-stress-1',
       'quest-darkest-core-seal-disease-1',
       'quest-darkest-core-seal-hunger-1',
-      'quest-darkest-core-final-1', // 最终讨伐
+      'quest-darkest-core-final-1', // Final Assault
     ],
     routeGeneratorId: 'route-darkest-core-generator',
     encounterPoolIds: ['pool-darkest-core-normal-1', 'pool-darkest-core-normal-2'],
@@ -91,22 +91,22 @@ export const FINAL_QUEST_CHAIN: Record<string, FinalQuestChainNode> = {
   'quest-darkest-core-gate-1': {
     id: 'quest-darkest-core-gate-1',
     stage: 'gate-opening',
-    name: '开启无光之门',
+    name: 'Open the Portal',
     description: '将三个区域 Boss 留下的遗物放置于圣物祭坛,使用它们的遗产之力打开无光之门。消耗 6 张肖像 + 6 个纹章 + 一周时间。',
     prerequisiteIds: [],
   },
   'quest-darkest-core-outer-1': {
     id: 'quest-darkest-core-outer-1',
     stage: 'outer-expedition',
-    name: '穿越外层',
+    name: 'Traverse the Foothills',
     description: '12-15 节点的最终区域外层远征。混合三个区域机制(压力/疾病/流血),并加入 4 个最终区域新敌人、2 个精英。必须经过 1 次露营和 1 次撤退判断。',
     prerequisiteIds: ['quest-darkest-core-gate-1'],
   },
   'quest-darkest-core-seal-stress-1': {
     id: 'quest-darkest-core-seal-stress-1',
     stage: 'seal-destruction',
-    name: '摧毁压力/诅咒封印',
-    description: '祖先诅咒的核心印记。携带抗压圣物进入封印,削弱最终 Boss 阶段 1 的压力光环。完成后获得「诅咒瓦解者」最终任务物品并解锁阶段 1 情报。',
+    name: 'Destroy the Stress/Curse Seals',
+    description: '祖先诅咒的核心印记。携带抗压圣物进入封印,削弱最终 Boss 阶段 1 的压力光环。完成后获得「Cursebreaker」最终任务物品并解锁阶段 1 情报。',
     prerequisiteIds: ['quest-darkest-core-outer-1'],
     destroysSealId: 'seal-darkest-stress-curse',
     grantsFinalQuestItemId: 'item-final-curse-breaker',
@@ -115,8 +115,8 @@ export const FINAL_QUEST_CHAIN: Record<string, FinalQuestChainNode> = {
   'quest-darkest-core-seal-disease-1': {
     id: 'quest-darkest-core-seal-disease-1',
     stage: 'seal-destruction',
-    name: '摧毁疾病/腐蚀封印',
-    description: '腐败之源。携带抗病圣物进入封印,削弱最终 Boss 阶段 2 的疾病光环。完成后获得「净化者之眼」并解锁阶段 2 情报。',
+    name: 'Destroy the Disease/Corruption Seals',
+    description: `The Source of Corruption。携带抗病圣物进入封印,削弱最终 Boss 阶段 2 的疾病光环。完成后获得「Purifier's Eye」并解锁阶段 2 情报。`,
     prerequisiteIds: ['quest-darkest-core-outer-1'],
     destroysSealId: 'seal-darkest-disease-corrupt',
     grantsFinalQuestItemId: 'item-final-purifier-eye',
@@ -125,8 +125,8 @@ export const FINAL_QUEST_CHAIN: Record<string, FinalQuestChainNode> = {
   'quest-darkest-core-seal-hunger-1': {
     id: 'quest-darkest-core-seal-hunger-1',
     stage: 'seal-destruction',
-    name: '摧毁饥饿/流血封印',
-    description: '血肉诅咒。携带战斗绷带/储粮进入封印,削弱最终 Boss 阶段 3 的流血光环。完成后获得「饥饿者的安息」并解锁阶段 3 情报。',
+    name: 'Destroy the Hunger/Bleed Seals',
+    description: `Blood Moon Curse。携带战斗绷带/储粮进入封印,削弱最终 Boss 阶段 3 的流血光环。完成后获得「Hunger's Rest」并解锁阶段 3 情报。`,
     prerequisiteIds: ['quest-darkest-core-outer-1'],
     destroysSealId: 'seal-darkest-hunger-bleed',
     grantsFinalQuestItemId: 'item-final-hunger-rest',
@@ -135,7 +135,7 @@ export const FINAL_QUEST_CHAIN: Record<string, FinalQuestChainNode> = {
   'quest-darkest-core-final-1': {
     id: 'quest-darkest-core-final-1',
     stage: 'final-assault',
-    name: '最终讨伐',
+    name: 'Final Assault',
     description: '4 阶段最终 Boss(黑暗本相)战:阶段 1 试探与回忆 / 阶段 2 多区域机制融合 / 阶段 3 英雄个体考验 / 阶段 4 最终抉择。所有最终任务物品必须在最终队伍确认时选择携带,无法在中途补充。',
     prerequisiteIds: [
       'quest-darkest-core-seal-stress-1',
@@ -154,7 +154,7 @@ export const FINAL_SEALS: Record<string, FinalSealDefinition> = {
   'seal-darkest-stress-curse': {
     id: 'seal-darkest-stress-curse',
     theme: 'stress-curse',
-    name: '先祖诅咒之印',
+    name: `Ancestor's Signet`,
     description: '被祖先降罪的血脉印记,缠绕在最终 Boss 第一阶段。摧毁后削弱 Boss 阶段 1 的压力光环 -50%。',
     weakensFinalPhaseIndexes: [0],
     grantsFinalQuestItemId: 'item-final-curse-breaker',
@@ -165,7 +165,7 @@ export const FINAL_SEALS: Record<string, FinalSealDefinition> = {
   'seal-darkest-disease-corrupt': {
     id: 'seal-darkest-disease-corrupt',
     theme: 'disease-corrupt',
-    name: '腐败之源',
+    name: 'The Source of Corruption',
     description: '三个区域疾病的聚合点,腐蚀一切进入的生物。摧毁后削弱 Boss 阶段 2 疾病光环 -50%。',
     weakensFinalPhaseIndexes: [1],
     grantsFinalQuestItemId: 'item-final-purifier-eye',
@@ -176,7 +176,7 @@ export const FINAL_SEALS: Record<string, FinalSealDefinition> = {
   'seal-darkest-hunger-bleed': {
     id: 'seal-darkest-hunger-bleed',
     theme: 'hunger-bleed',
-    name: '血肉诅咒',
+    name: 'Blood Moon Curse',
     description: '吞噬一切的饥饿。摧毁后削弱 Boss 阶段 3 流血光环 -50%。',
     weakensFinalPhaseIndexes: [2],
     grantsFinalQuestItemId: 'item-final-hunger-rest',
@@ -193,7 +193,7 @@ export const FINAL_SEALS: Record<string, FinalSealDefinition> = {
 export const FINAL_QUEST_ITEMS: Record<string, FinalQuestItemDefinition> = {
   'item-final-curse-breaker': {
     id: 'item-final-curse-breaker',
-    name: '诅咒瓦解者',
+    name: 'Cursebreaker',
     description: '由三个区域 Boss 遗物锻造的银质圣物。在最终 Boss 阶段 1 可使用,清除全队所有压力 + 移除诅咒标记。建议必带(压力光环 -50% 后仍可能溢出)。',
     sourceQuestId: 'quest-darkest-core-seal-stress-1',
     inventorySlots: 2,
@@ -206,7 +206,7 @@ export const FINAL_QUEST_ITEMS: Record<string, FinalQuestItemDefinition> = {
   },
   'item-final-purifier-eye': {
     id: 'item-final-purifier-eye',
-    name: '净化者之眼',
+    name: `Purifier's Eye`,
     description: '由林地母巢之眼改造的净化圣物。在最终 Boss 阶段 2 可使用,本轮全员免疫疾病感染 + 解除腐蚀。注意:对已经在场的疾病无效(只防新增)。',
     sourceQuestId: 'quest-darkest-core-seal-disease-1',
     inventorySlots: 2,
@@ -219,7 +219,7 @@ export const FINAL_QUEST_ITEMS: Record<string, FinalQuestItemDefinition> = {
   },
   'item-final-hunger-rest': {
     id: 'item-final-hunger-rest',
-    name: '饥饿者的安息',
+    name: `Hunger's Rest`,
     description: '由兽穴吞噬者之牙改造的安息圣物。在最终 Boss 阶段 3 可使用,清除全队流血 + 饥饿;前排 HP 恢复 +20%。阶段 4 撤退成功率 +15%(类似 6D 战斗绷带)。',
     sourceQuestId: 'quest-darkest-core-seal-hunger-1',
     inventorySlots: 2,
@@ -232,8 +232,8 @@ export const FINAL_QUEST_ITEMS: Record<string, FinalQuestItemDefinition> = {
   },
   'item-final-veteran-oath': {
     id: 'item-final-veteran-oath',
-    name: '老兵之誓',
-    description: '由 3 个区域 Boss 永久奖励合成的无敌之誓(需要解锁 Phase 6 所有奖励才能获得)。在最终 Boss 阶段 4 可使用,保护一名英雄免受一次致死打击(Death\'s Door 不计入死亡)。消耗后该英雄将不可避免进入 Death\'s Door。',
+    name: `Veteran's Oath`,
+    description: `由 3 个区域 Boss 永久奖励合成的无敌之誓(需要解锁 Phase 6 所有奖励才能获得)。在最终 Boss 阶段 4 可使用,保护一名英雄免受一次致死打击(Death's Door 不计入死亡)。消耗后该英雄将不可避免进入 Death's Door。`,
     sourceQuestId: 'quest-darkest-core-final-1',
     inventorySlots: 3,
     usableInPhaseIds: ['phase-final-3'],
@@ -252,27 +252,27 @@ export const FINAL_QUEST_ITEMS: Record<string, FinalQuestItemDefinition> = {
 export const FINAL_CAMP_ACTIVITIES: Record<string, FinalCampActivity> = {
   'camp-final-remember': {
     id: 'camp-final-remember',
-    name: '回顾一路牺牲',
+    name: 'Remember the Fallen',
     description: '阅读墓园记录,祭奠在 Phase 1-6 中牺牲的英雄。降低全队压力 10,触发一名死亡英雄的纪念事件(根据死亡数量产生不同结果)。',
     conditions: [],
     effects: [
-      { kind: 'apply-stress', amount: -10, heroSelector: 'all-alive', narrativeHint: '回顾一路牺牲' },
+      { kind: 'apply-stress', amount: -10, heroSelector: 'all-alive', narrativeHint: 'Remember the Fallen' },
     ],
     requiresHeroTarget: false,
   },
   'camp-final-inventory': {
     id: 'camp-final-inventory',
-    name: '整理最终任务物品',
+    name: 'Sort the Trinkets',
     description: '检查所有最终任务物品,提高最终 Boss 阶段 1 稳定性(+10% 撤退成功率基础值,本露营一次性)。',
     conditions: [],
     effects: [
-      { kind: 'set-flag', flagName: 'final_camp_inventory_done', flagValue: true, narrativeHint: '整理最终任务物品' },
+      { kind: 'set-flag', flagName: 'final_camp_inventory_done', flagValue: true, narrativeHint: 'Sort the Trinkets' },
     ],
     requiresHeroTarget: false,
   },
   'camp-final-provisions': {
     id: 'camp-final-provisions',
-    name: '分配最后补给',
+    name: 'Distribute Provisions',
     description: '消耗大量食物(火把 +50,食物 +12)。最终 Boss 阶段 4 英雄 HP 上限 +10%。',
     conditions: [],
     effects: [
@@ -282,21 +282,21 @@ export const FINAL_CAMP_ACTIVITIES: Record<string, FinalCampActivity> = {
   },
   'camp-final-oath': {
     id: 'camp-final-oath',
-    name: '立下誓言',
+    name: 'Swear the Oath',
     description: '解锁高风险高收益最终选择(阶段 4 提供额外攻击选项)。失败时全队压力 +10。',
     conditions: [],
     effects: [
-      { kind: 'set-flag', flagName: 'final_camp_oath_taken', flagValue: true, narrativeHint: '立下誓言' },
+      { kind: 'set-flag', flagName: 'final_camp_oath_taken', flagValue: true, narrativeHint: 'Swear the Oath' },
     ],
     requiresHeroTarget: false,
   },
   'camp-final-memorial': {
     id: 'camp-final-memorial',
-    name: '纪念旧友',
+    name: 'Memorize the Lost',
     description: '根据墓园死亡英雄数量产生不同结果。0 死亡:无效果;1-2 死亡:全队压力 -5;3+ 死亡:可能触发「悲痛」负面怪癖,但老兵压力 -8。',
     conditions: [],
     effects: [
-      { kind: 'set-flag', flagName: 'final_camp_memorial_done', flagValue: true, narrativeHint: '纪念旧友' },
+      { kind: 'set-flag', flagName: 'final_camp_memorial_done', flagValue: true, narrativeHint: 'Memorize the Lost' },
     ],
     requiresHeroTarget: false,
   },
@@ -321,7 +321,7 @@ export interface FinalRegionEnemy {
 export const FINAL_ENEMIES: Record<string, FinalRegionEnemy> = {
   'enemy-memory-devourer': {
     id: 'enemy-memory-devourer',
-    name: '记忆吞噬者',
+    name: 'Memory Eater',
     tier: 'normal',
     description: '吞噬英雄记忆的扭曲存在,使玩家失去英雄历史信息,封锁与英雄经验相关的选择。',
     threatTags: ['memory-loss', 'stress', 'history-block'],
@@ -329,7 +329,7 @@ export const FINAL_ENEMIES: Record<string, FinalRegionEnemy> = {
   },
   'enemy-lightless-apostle': {
     id: 'enemy-lightless-apostle',
-    name: '无光使徒',
+    name: 'Apostle of the Lightless',
     tier: 'normal',
     description: '祖先的盲目仆从,削弱火把并强化未知风险。',
     threatTags: ['torch-down', 'mystery', 'darkness'],
@@ -337,7 +337,7 @@ export const FINAL_ENEMIES: Record<string, FinalRegionEnemy> = {
   },
   'enemy-corrupt-warden': {
     id: 'enemy-corrupt-warden',
-    name: '腐化守门者',
+    name: 'Corrupted Gatekeeper',
     tier: 'normal',
     description: '混合流血、腐蚀与防御的重甲守卫,污染过的铠甲仍会流出黑色脓液。',
     threatTags: ['bleed', 'corrupt', 'defense'],
@@ -345,7 +345,7 @@ export const FINAL_ENEMIES: Record<string, FinalRegionEnemy> = {
   },
   'enemy-disorder-shadow': {
     id: 'enemy-disorder-shadow',
-    name: '失序之影',
+    name: 'Shadow of Disorder',
     tier: 'normal',
     description: '打乱站位并干扰主要执行者,折射的空间让英雄无法保持阵型。',
     threatTags: ['position-break', 'formation-disrupt'],
@@ -354,15 +354,15 @@ export const FINAL_ENEMIES: Record<string, FinalRegionEnemy> = {
   // 2 精英敌人(SPEC §8)
   'enemy-abyss-magistrate': {
     id: 'enemy-abyss-magistrate',
-    name: '深渊执政官',
+    name: 'Abyssal Magistrate',
     tier: 'elite',
     description: '高压力、召唤和环境强化的精英,会以环境亡灵仪式反制玩家。',
     threatTags: ['stress', 'summon', 'environment'],
-    mechanics: '对全员 +10 压力;每 2 轮召唤 1 个失序之影;强化环境目标 HP 30%',
+    mechanics: '对全员 +10 压力;每 2 轮召唤 1 个Shadow of Disorder;强化环境目标 HP 30%',
   },
   'enemy-final-hunter': {
     id: 'enemy-final-hunter',
-    name: '终末猎手',
+    name: 'End-Times Hunter',
     tier: 'elite',
     description: '集中攻击 Death\'s Door 英雄,无差别斩杀濒死者,不会放过任何倒下的灵魂。',
     threatTags: ['deaths-door-target', 'execute'],
@@ -429,7 +429,7 @@ export const FINAL_CURIOS: Record<string, FinalRegionCurio> = {
       {
         id: 'banner-take',
         title: '收下战旗',
-        description: '作为最终讨伐纪念物,不消耗也不生效',
+        description: '作为Final Assault纪念物,不消耗也不生效',
         riskTags: ['safe'],
       },
     ],
@@ -570,14 +570,14 @@ export interface FinalRegionRoute {
   bossPrepNodeIndex: number;
 }
 
-// 最终讨伐路线(16-20 节点,SPEC §7)
+// Final Assault路线(16-20 节点,SPEC §7)
 export const FINAL_ROUTE: FinalRegionRoute = {
   id: 'route-darkest-core-final',
   regionId: 'darkest-core',
   totalNodes: 20,
   nodes: [
     { id: 'fn-0', index: 0, type: 'start', name: '无光之门入口', description: '通往黑暗核心的入口,先祖的阴影在前方等待。' },
-    { id: 'fn-1', index: 1, type: 'encounter', name: '失序之影伏击', description: '第一波敌人,失序之影的先头部队。', contentIds: ['enemy-disorder-shadow'] },
+    { id: 'fn-1', index: 1, type: 'encounter', name: 'Shadow of Disorder伏击', description: '第一波敌人,Shadow of Disorder的先头部队。', contentIds: ['enemy-disorder-shadow'] },
     { id: 'fn-2', index: 2, type: 'curio', name: '英雄纪念碑', description: '碑上刻有第一个牺牲英雄的名字。', contentIds: ['curio-darkest-memorial'] },
     { id: 'fn-3', index: 3, type: 'fork', name: '三岔路', description: '通向三个区域机制的路径分流。',
       forkOptions: [
@@ -585,22 +585,22 @@ export const FINAL_ROUTE: FinalRegionRoute = {
         { id: 'fork-disease', label: '腐蚀之路(疾病封印方向)', nextNodeId: 'fn-4-disease', riskTags: ['disease-risk'] },
         { id: 'fork-hunger', label: '饥饿之路(流血封印方向)', nextNodeId: 'fn-4-hunger', riskTags: ['hunger-bleed'] },
       ] },
-    { id: 'fn-4-stress', index: 4, type: 'elite', name: '无光使徒首领', description: '精英敌人,削弱火把并强化未知。', contentIds: ['enemy-lightless-apostle'] },
-    { id: 'fn-4-disease', index: 4, type: 'elite', name: '腐化守门者', description: '精英敌人,混合流血与腐蚀。', contentIds: ['enemy-corrupt-warden'] },
-    { id: 'fn-4-hunger', index: 4, type: 'elite', name: '记忆吞噬者', description: '精英敌人,封锁英雄历史选项。', contentIds: ['enemy-memory-devourer'] },
-    { id: 'fn-5', index: 5, type: 'encounter', name: '深渊执政官', description: '第一次遇见精英执政官,会召失序之影。', contentIds: ['enemy-abyss-magistrate'] },
+    { id: 'fn-4-stress', index: 4, type: 'elite', name: 'Apostle of the Lightless首领', description: '精英敌人,削弱火把并强化未知。', contentIds: ['enemy-lightless-apostle'] },
+    { id: 'fn-4-disease', index: 4, type: 'elite', name: 'Corrupted Gatekeeper', description: '精英敌人,混合流血与腐蚀。', contentIds: ['enemy-corrupt-warden'] },
+    { id: 'fn-4-hunger', index: 4, type: 'elite', name: 'Memory Eater', description: '精英敌人,封锁英雄历史选项。', contentIds: ['enemy-memory-devourer'] },
+    { id: 'fn-5', index: 5, type: 'encounter', name: 'Abyssal Magistrate', description: '第一次遇见精英执政官,会召Shadow of Disorder。', contentIds: ['enemy-abyss-magistrate'] },
     { id: 'fn-6', index: 6, type: 'curio', name: '破碎战旗', description: 'Boss 战留下的战旗。', contentIds: ['curio-darkest-banner'] },
     { id: 'fn-7', index: 7, type: 'trap', name: '无光裂隙', description: '高伤害陷阱,需要技能检查解除。', contentIds: ['trap-darkest-rift'] },
     { id: 'fn-8', index: 8, type: 'camp', name: '最终露营前哨', description: '外层穿越的中途露营,SPEC §10 5 个活动全部可用。' },
-    { id: 'fn-9', index: 9, type: 'encounter', name: '无光使徒群', description: '群体敌人,火把 -50%。', contentIds: ['enemy-lightless-apostle'] },
+    { id: 'fn-9', index: 9, type: 'encounter', name: 'Apostle of the Lightless群', description: '群体敌人,火把 -50%。', contentIds: ['enemy-lightless-apostle'] },
     { id: 'fn-10', index: 10, type: 'curio', name: '无光圣龛', description: '祖先祭坛。', contentIds: ['curio-darkest-shrine'] },
-    { id: 'fn-11', index: 11, type: 'encounter', name: '终末猎手', description: '精英猎手,专攻 Death\'s Door 英雄。', contentIds: ['enemy-final-hunter'] },
+    { id: 'fn-11', index: 11, type: 'encounter', name: 'End-Times Hunter', description: `精英猎手,专攻 Death's Door 英雄。`, contentIds: ['enemy-final-hunter'] },
     { id: 'fn-12', index: 12, type: 'trap', name: '记忆断层', description: '中等伤害,压力 +8。', contentIds: ['trap-darkest-fault'] },
     { id: 'fn-13', index: 13, type: 'curio', name: '封存记忆', description: '玻璃瓶记忆。', contentIds: ['curio-darkest-memory'] },
     { id: 'fn-14', index: 14, type: 'fork', name: '撤退判断', description: '最后一次撤退窗口(若继续则不可逆)。' },
     { id: 'fn-15', index: 15, type: 'trap', name: '逆转封印', description: '高难度陷阱,可能倒转 1 封印。', contentIds: ['trap-darkest-seal'] },
-    { id: 'fn-16', index: 16, type: 'encounter', name: '深渊执政官 x2', description: '最后精英,两个执政官。', contentIds: ['enemy-abyss-magistrate'] },
-    { id: 'fn-17', index: 17, type: 'objective', name: 'Boss 准备节点', description: '最终讨伐前准备:队伍确认 + 补给确认 + 风险提示。' },
+    { id: 'fn-16', index: 16, type: 'encounter', name: 'Abyssal Magistrate x2', description: '最后精英,两个执政官。', contentIds: ['enemy-abyss-magistrate'] },
+    { id: 'fn-17', index: 17, type: 'objective', name: 'Boss 准备节点', description: 'Final Assault前准备:队伍确认 + 补给确认 + 风险提示。' },
     // 最终 Boss 在 fn-17 之后,作为 route 的最后一个节点
   ],
   campNodeIndices: [8],

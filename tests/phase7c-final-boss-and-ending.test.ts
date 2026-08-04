@@ -52,41 +52,41 @@ describe('Phase 7C: 最终 Boss 4 阶段(SPEC §11)', () => {
     }
   });
 
-  it('阶段 0 主题:试探与回忆(SPEC §11.1)', () => {
+  it('阶段 0 主题:Probe and Memory(SPEC §11.1)', () => {
     const phase = FINAL_BOSS_PHASES['phase-final-0'];
-    expect(phase.name).toBe('试探与回忆');
+    expect(phase.name).toBe('Probe and Memory');
     // 包含读墓园 / 读情报选项
     expect(phase.tacticalOptionRules.some((r) => r.title.includes('回忆情报'))).toBe(true);
     expect(phase.tacticalOptionRules.some((r) => r.title.includes('缅怀墓园'))).toBe(true);
   });
 
-  it('阶段 1 主题:多区域机制融合(SPEC §11.2)', () => {
+  it('阶段 1 主题:Multi-Region Fusion(SPEC §11.2)', () => {
     const phase = FINAL_BOSS_PHASES['phase-final-1'];
-    expect(phase.name).toBe('多区域机制融合');
+    expect(phase.name).toBe('Multi-Region Fusion');
     // 包含最终任务物品(诅咒瓦解者 / 净化者之眼)
     expect(phase.tacticalOptionRules.some((r) => r.title.includes('诅咒瓦解者'))).toBe(true);
     expect(phase.tacticalOptionRules.some((r) => r.title.includes('净化者之眼'))).toBe(true);
   });
 
-  it('阶段 2 主题:英雄个体考验(SPEC §11.3)', () => {
+  it('阶段 2 主题:Hero Trial(SPEC §11.3)', () => {
     const phase = FINAL_BOSS_PHASES['phase-final-2'];
-    expect(phase.name).toBe('英雄个体考验');
-    // 包含英雄个体考验 trigger
-    expect(phase.tacticalOptionRules.some((r) => r.title.includes('英雄个体考验'))).toBe(true);
+    expect(phase.name).toBe('Hero Trial');
+    // 包含 Hero Trial trigger
+    expect(phase.tacticalOptionRules.some((r) => r.title.includes('Hero Trial'))).toBe(true);
   });
 
-  it('阶段 3 主题:最终抉择(SPEC §11.4)', () => {
+  it('阶段 3 主题:Final Choice(SPEC §11.4)', () => {
     const phase = FINAL_BOSS_PHASES['phase-final-3'];
-    expect(phase.name).toBe('最终抉择');
-    // 包含老兵之誓(最终任务物品) + 撤退(高成本)
-    expect(phase.tacticalOptionRules.some((r) => r.title.includes('老兵之誓'))).toBe(true);
+    expect(phase.name).toBe('Final Choice');
+    // 包含 Veteran\u0027s Oath(最终任务物品) + 撤退(高成本)
+    expect(phase.tacticalOptionRules.some((r) => r.title.includes("Veteran"))).toBe(true);
     expect(phase.tacticalOptionRules.some((r) => r.category === 'retreat')).toBe(true);
   });
 
   it('最终 Boss 4 阶段 ≥ 4 阶段(SPEC §11 至少四阶段)', () => {
     expect(FINAL_BOSS_INFO.phaseCount).toBe(4);
     expect(FINAL_BOSS_INFO.id).toBe('boss-darkest-core');
-    expect(FINAL_BOSS_INFO.name).toBe('黑暗本相');
+    expect(FINAL_BOSS_INFO.name).toBe('Heart of Darkness');
   });
 });
 

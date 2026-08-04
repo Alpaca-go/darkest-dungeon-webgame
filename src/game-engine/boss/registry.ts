@@ -2,8 +2,8 @@
  * Boss 注册表(Phase 6B)
  *
  * 6A 阶段只交付 1 个测试 Boss `boss-test-arbiter` 用于验证框架。
- * 6B 把测试 Boss 内容升级为"失落审判者"完整设计(遗迹 Boss,per dev §20.1)。
- * 6C/6D 将分别新增"孢疫母巢"和"饥渊吞噬者"。
+ * 6B 把测试 Boss 内容升级为"Necromancer"完整设计(遗迹 Boss,per dev §20.1)。
+ * 6C/6D 将分别新增"Hag"和"Swine Prince"。
  *
  * 数据驱动:registry 集中管理所有 Boss 静态定义,UI 只读不写。
  */
@@ -45,7 +45,7 @@ export const BOSS_TASKS: Record<string, BossTaskMeta> = {
     bossId: 'boss-test-arbiter',
     type: 'investigation',
     name: '调查远古审判厅',
-    description: '深入遗迹,在北侧偏殿找到通往审判厅的隐藏甬道;翻阅落满灰尘的审判名册,确认"失落审判者"确实在守卫着它。',
+    description: '深入遗迹,在北侧偏殿找到通往审判厅的隐藏甬道;翻阅落满灰尘的审判名册,确认"Necromancer"确实在守卫着它。',
     grantsIds: ['intel-attack-1', 'intel-status-1', 'intel-phase-1'],
   },
   // ---- 削弱任务 ----
@@ -70,19 +70,19 @@ export const BOSS_TASKS: Record<string, BossTaskMeta> = {
     id: 'task-test-final-1',
     bossId: 'boss-test-arbiter',
     type: 'final',
-    name: '失落审判者讨伐',
+    name: 'Necromancer讨伐',
     description: '进入审判厅,经历 8-12 个节点的 Boss 专属路线,在最后准备节点确认队伍状态,再进入三阶段选择式 Boss 遭遇。',
     grantsIds: [],
   },
   // ============================================================
-  // 6C:孢疫母巢(spore-matriarch)— corrupted-woods
+  // 6C:Hag(spore-matriarch)— corrupted-woods
   // ============================================================
   'task-spore-investigate-1': {
     id: 'task-spore-investigate-1',
     bossId: 'boss-spore-matriarch',
     type: 'investigation',
     name: '调查腐败林地菌床',
-    description: '深入林地深处,顺着孢子气味的浓重方向找到被菌丝覆盖的古代祭坛;在腐烂的树皮上刻下"母巢"二字,确认孢疫母巢确实在地下菌床中沉睡。',
+    description: '深入林地深处,顺着孢子气味的浓重方向找到被菌丝覆盖的古代祭坛;在腐烂的树皮上刻下"母巢"二字,确认Hag确实在地下菌床中沉睡。',
     grantsIds: ['intel-spore-attack-1', 'intel-spore-status-1', 'intel-spore-phase-1'],
   },
   'task-spore-weaken-1': {
@@ -105,12 +105,12 @@ export const BOSS_TASKS: Record<string, BossTaskMeta> = {
     id: 'task-spore-final-1',
     bossId: 'boss-spore-matriarch',
     type: 'final',
-    name: '孢疫母巢讨伐',
+    name: 'Hag讨伐',
     description: '沿菌丝小径下到地下母巢,在"母巢之心"前最后确认队伍抗病与压力状态,再进入三阶段孢子感染式 Boss 遭遇。',
     grantsIds: [],
   },
   // ============================================================
-  // 6D:饥渊吞噬者(burrows-devourer)— underground-burrows
+  // 6D:Swine Prince(burrows-devourer)— underground-burrows
   // ============================================================
   'task-burrows-investigate-1': {
     id: 'task-burrows-investigate-1',
@@ -140,7 +140,7 @@ export const BOSS_TASKS: Record<string, BossTaskMeta> = {
     id: 'task-burrows-final-1',
     bossId: 'boss-burrows-devourer',
     type: 'final',
-    name: '饥渊吞噬者讨伐',
+    name: 'Swine Prince讨伐',
     description: '沿血迹走完 8-12 个节点的 Boss 专属路线,在最后准备节点确认队伍食物与流血状态,再进入三阶段饥饿式 Boss 遭遇。',
     grantsIds: [],
   },
@@ -163,7 +163,7 @@ const TEST_BOSS_RETREAT: BossRetreatRules = {
 };
 
 /**
- * 6C 孢疫母巢撤退规则(per dev §20.2)
+ * 6C Hag撤退规则(per dev §20.2)
  * 基础 60% 比审判者低(疾病压更不容易撤);
  * 阶段 1 召唤感染体,阶段 2 母巢暴走更难撤。
  */
@@ -180,7 +180,7 @@ const SPORE_BOSS_RETREAT: BossRetreatRules = {
 };
 
 /**
- * 6D 饥渊吞噬者撤退规则(per dev §20.3)
+ * 6D Swine Prince撤退规则(per dev §20.3)
  * 基础 55%(三 Boss 最低;地下逃亡难度最高);
  * 阶段 2 -45%(仅 10%,几乎无法撤)。
  */
@@ -286,7 +286,7 @@ export const BOSS_ENVIRONMENT_TARGETS: Record<string, BossEnvironmentTargetDefin
     ],
   },
   // ============================================================
-  // 6C 孢疫母巢环境目标
+  // 6C Hag环境目标
   // ============================================================
   'env-spore-mycelium-bed': {
     id: 'env-spore-mycelium-bed',
@@ -375,7 +375,7 @@ export const BOSS_ENVIRONMENT_TARGETS: Record<string, BossEnvironmentTargetDefin
     ],
   },
   // ============================================================
-  // 6D 饥渊吞噬者环境目标
+  // 6D Swine Prince环境目标
   // ============================================================
   'env-burrows-food-pit': {
     id: 'env-burrows-food-pit',
@@ -598,7 +598,7 @@ export const BOSS_INTELLIGENCE: Record<string, BossIntelligenceEntry> = {
     ],
   },
   // ============================================================
-  // 6C 孢疫母巢情报(8 条)
+  // 6C Hag情报(8 条)
   // ============================================================
   'intel-spore-attack-1': {
     id: 'intel-spore-attack-1',
@@ -713,7 +713,7 @@ export const BOSS_INTELLIGENCE: Record<string, BossIntelligenceEntry> = {
     ],
   },
   // ============================================================
-  // 6D 饥渊吞噬者情报(8 条)
+  // 6D Swine Prince情报(8 条)
   // ============================================================
   'intel-burrows-attack-1': {
     id: 'intel-burrows-attack-1',
@@ -873,7 +873,7 @@ export const BOSS_WEAKENING_EFFECTS: Record<string, BossWeakeningEffect> = {
     persistence: 'until-boss-defeated',
   },
   // ============================================================
-  // 6C 孢疫母巢削弱效果
+  // 6C Hag削弱效果
   // ============================================================
   'weaken-spore-mycelium': {
     id: 'weaken-spore-mycelium',
@@ -914,7 +914,7 @@ export const BOSS_WEAKENING_EFFECTS: Record<string, BossWeakeningEffect> = {
     persistence: 'until-boss-defeated',
   },
   // ============================================================
-  // 6D 饥渊吞噬者削弱效果
+  // 6D Swine Prince削弱效果
   // ============================================================
   'weaken-burrows-food': {
     id: 'weaken-burrows-food',
@@ -981,7 +981,7 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
     bossId: 'boss-test-arbiter',
     phaseIndex: 0,
     name: '审判',
-    description: '失落审判者从审判席上站起,身前浮现出"审判之锤"的轮廓;环境目标审判屏障显现,玩家可在本阶段先观察情报,或用破咒圣物穿透屏障。',
+    description: 'Necromancer从审判席上站起,身前浮现出"审判之锤"的轮廓;环境目标审判屏障显现,玩家可在本阶段先观察情报,或用破咒圣物穿透屏障。',
     enterConditions: [
       { kind: 'flag-exists', flagName: 'boss_encounter_active' },
     ],
@@ -1199,7 +1199,7 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
     ],
   },
   // ============================================================
-  // 6C 孢疫母巢阶段定义(3 个)
+  // 6C Hag阶段定义(3 个)
   // ============================================================
   'phase-spore-0': {
     id: 'phase-spore-0',
@@ -1424,7 +1424,7 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
     ],
   },
   // ============================================================
-  // 6D 饥渊吞噬者阶段定义(3 个)
+  // 6D Swine Prince阶段定义(3 个)
   // ============================================================
   'phase-burrows-0': {
     id: 'phase-burrows-0',
@@ -1493,7 +1493,7 @@ export const BOSS_PHASES: Record<string, BossPhaseDefinition> = {
         effects: [
           { kind: 'set-flag', flagName: 'boss_encounter_active', flagValue: true },
         ],
-        narrativeHint: 'Boss 战开始:饥渊吞噬者潜伏于兽穴深处',
+        narrativeHint: 'Boss 战开始:Swine Prince潜伏于兽穴深处',
       },
     ],
   },
@@ -1656,7 +1656,7 @@ export const BOSS_PERMANENT_REWARDS: Record<string, BossPermanentReward> = {
     id: 'reward-test-arbiter',
     bossId: 'boss-test-arbiter',
     name: '审判者遗产',
-    description: '击败失落审判者后,玩家获得"审判者封印"饰品,遗迹区域侦察 +20%、抗压 +15%;并解锁"审判者余威"任务修正词(后续任务每场 +3 压力上限 -5%)。遗产不会被重复领取(SPEC §27)。',
+    description: '击败Necromancer后,玩家获得"审判者封印"饰品,遗迹区域侦察 +20%、抗压 +15%;并解锁"审判者余威"任务修正词(后续任务每场 +3 压力上限 -5%)。遗产不会被重复领取(SPEC §27)。',
     campaignModifiers: [
       { kind: 'set-flag', flagName: 'ruins_scouting_bonus', flagValue: 0.2 },
       { kind: 'set-flag', flagName: 'ruins_stress_resist', flagValue: 0.15 },
@@ -1665,13 +1665,13 @@ export const BOSS_PERMANENT_REWARDS: Record<string, BossPermanentReward> = {
     unlockedQuestModifierIds: ['modifier-审判者余威'],
   },
   // ============================================================
-  // 6C 孢疫母巢永久奖励
+  // 6C Hag永久奖励
   // ============================================================
   'reward-spore-matriarch': {
     id: 'reward-spore-matriarch',
     bossId: 'boss-spore-matriarch',
     name: '母巢之心',
-    description: '击败孢疫母巢后,玩家获得"母巢之眼"饰品,林地区域抗病 +25%、疾病感染率 -20%;并解锁"菌丝共生"任务修正词(后续任务每场抗病 tag +1)。遗产不会被重复领取(SPEC §27)。',
+    description: '击败Hag后,玩家获得"母巢之眼"饰品,林地区域抗病 +25%、疾病感染率 -20%;并解锁"菌丝共生"任务修正词(后续任务每场抗病 tag +1)。遗产不会被重复领取(SPEC §27)。',
     campaignModifiers: [
       { kind: 'set-flag', flagName: 'woods_disease_resist', flagValue: 0.25 },
       { kind: 'set-flag', flagName: 'woods_infection_reduction', flagValue: 0.20 },
@@ -1680,13 +1680,13 @@ export const BOSS_PERMANENT_REWARDS: Record<string, BossPermanentReward> = {
     unlockedQuestModifierIds: ['modifier-菌丝共生'],
   },
   // ============================================================
-  // 6D 饥渊吞噬者永久奖励
+  // 6D Swine Prince永久奖励
   // ============================================================
   'reward-burrows-devourer': {
     id: 'reward-burrows-devourer',
     bossId: 'boss-burrows-devourer',
     name: '饥饿者的记忆',
-    description: '击败饥渊吞噬者后,玩家获得"吞噬者之牙"饰品,兽穴区域食物消耗 -25%、前排警戒 +15%;并解锁"饥饿本能"任务修正词(后续任务每场 +2 食物获得)。遗产不会被重复领取(SPEC §27)。',
+    description: '击败Swine Prince后,玩家获得"吞噬者之牙"饰品,兽穴区域食物消耗 -25%、前排警戒 +15%;并解锁"饥饿本能"任务修正词(后续任务每场 +2 食物获得)。遗产不会被重复领取(SPEC §27)。',
     campaignModifiers: [
       { kind: 'set-flag', flagName: 'burrows_food_consumption', flagValue: -0.25 },
       { kind: 'set-flag', flagName: 'burrows_scouting_bonus', flagValue: 0.15 },
@@ -1722,7 +1722,7 @@ export const BOSS_QUEST_ITEMS: Record<string, BossQuestItemDefinition> = {
     consumeOnUse: true,
   },
   // ============================================================
-  // 6C 孢疫母巢特殊任务物品
+  // 6C Hag特殊任务物品
   // ============================================================
   'item-spore-antidote': {
     id: 'item-spore-antidote',
@@ -1745,7 +1745,7 @@ export const BOSS_QUEST_ITEMS: Record<string, BossQuestItemDefinition> = {
     consumeOnUse: true,
   },
   // ============================================================
-  // 6D 饥渊吞噬者特殊任务物品
+  // 6D Swine Prince特殊任务物品
   // ============================================================
   'item-burrows-bandage': {
     id: 'item-burrows-bandage',
@@ -1776,7 +1776,7 @@ export const BOSS_QUEST_ITEMS: Record<string, BossQuestItemDefinition> = {
 export const BOSS_DEFINITIONS: Record<string, BossDefinition> = {
   'boss-test-arbiter': {
     id: 'boss-test-arbiter',
-    name: '失落审判者',
+    name: 'The Necromancer',
     regionId: 'ruins',
     description: '百年前因错判而被降罪,封入遗迹深处审判厅的审判者;他以亡魂为兵、以诅咒为刃,凡踏入审判厅者必须接受他的"终末宣判"。核心威胁:高压力 + 宗教诅咒 + 召唤信徒;玩家通过情报 + 削弱任务 + 针对性组队,改变 Boss 战的多个关键节点。',
     threatTags: ['stress', 'summon', 'curse'],
@@ -1799,12 +1799,12 @@ export const BOSS_DEFINITIONS: Record<string, BossDefinition> = {
     permanentRewardId: 'reward-test-arbiter',
   },
   // ============================================================
-  // 6C 孢疫母巢
+  // 6C Hag
   // ============================================================
   'boss-spore-matriarch': {
     id: 'boss-spore-matriarch',
-    name: '孢疫母巢',
-    regionId: 'corrupted-woods',
+    name: 'The Hag',
+    regionId: 'weald',
     description: '生长在腐败林地深处的巨型真菌集合体,直径 30 米,内部有节奏地搏动;它以孢子和菌丝为武器,腐蚀一切进入林地的生物。核心威胁:疾病 + 腐蚀 + 孢子扩散 + 感染召唤;玩家通过情报 + 削弱任务 + 抗病组队,改变 Boss 战的多个关键节点。',
     threatTags: ['disease', 'corruption', 'spore', 'infection'],
     recommendedHeroTags: ['disease-resist', 'plague-doctor', 'anti-corruption'],
@@ -1826,12 +1826,12 @@ export const BOSS_DEFINITIONS: Record<string, BossDefinition> = {
     permanentRewardId: 'reward-spore-matriarch',
   },
   // ============================================================
-  // 6D 饥渊吞噬者
+  // 6D Swine Prince
   // ============================================================
   'boss-burrows-devourer': {
     id: 'boss-burrows-devourer',
-    name: '饥渊吞噬者',
-    regionId: 'underground-burrows',
+    name: 'The Swine Prince',
+    regionId: 'warrens',
     description: '潜伏在地下兽穴深处的巨型掠食者,体长 6 米,长有 4 排撕裂獠牙;它以兽穴储粮为生,会召唤精英护卫围猎入侵者。核心威胁:撕裂獠牙 + 食物掠夺 + 流血 + 近距离压迫 + 阵型打乱;玩家通过情报 + 削弱任务 + 食物管理,改变 Boss 战的多个关键节点。',
     threatTags: ['bleed', 'food-drain', 'frontline-pressure', 'summon-guard', 'formation-break'],
     recommendedHeroTags: ['frontline-tank', 'anti-bleed', 'high-damage', 'food-efficient'],

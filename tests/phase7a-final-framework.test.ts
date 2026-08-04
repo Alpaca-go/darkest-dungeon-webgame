@@ -306,7 +306,7 @@ describe('Phase 7A: 最终区域 registry(SPEC §3 §5 §8 §9)', () => {
 
   it('darkest-core 引用 boss-darkest-core', () => {
     expect(FINAL_REGIONS['darkest-core'].finalBossId).toBe('boss-darkest-core');
-    expect(FINAL_REGIONS['darkest-core'].name).toBe('黑暗核心');
+    expect(FINAL_REGIONS['darkest-core'].name).toBe('The Darkest Dungeon');
   });
 
   it('撤退规则:基础 0.40,阶段 2 -0.35', () => {
