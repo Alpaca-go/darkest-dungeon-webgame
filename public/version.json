@@ -1,0 +1,21 @@
+{
+  "buildVersion": "0.9.0-rc1",
+  "schemaVersion": 7,
+  "releaseDate": "2026-08-04",
+  "phase": "release-candidate",
+  "minSupportedSchemaVersion": 2,
+  "maxSupportedSchemaVersion": 7,
+  "features": [
+    "完整战役闭环:新档 → 远征 → 庄园 → 区域 Boss → 最终区域 → 最终 Boss → 结局",
+    "3 区域 Boss 撤退规则 + 阶段状态机",
+    "4 阶段最终 Boss + 4 结局系统",
+    "9 平衡指标 + 健康检查",
+    "Content Manifest 109 条目 + 引用审计",
+    "Originality Manifest 39 条目 / 0 阻塞",
+    "Production Build Mode 5 环境隔离",
+    "存档导入导出(含 checksum + 备份 + 不覆盖原档)",
+    "Diagnostic Bundle 错误报告导出",
+    "PWA 离线 + Service Worker 缓存",
+    "947 → 1034+ 自动化测试覆盖"
+  ]
+}

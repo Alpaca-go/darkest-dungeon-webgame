@@ -1,0 +1,34 @@
+{
+  "buildVersion": "0.9.0-rc1",
+  "releaseDate": "2026-08-04",
+  "type": "release-candidate",
+  "highlights": [
+    "完整战役闭环:从新档到最终 Boss 4 阶段胜利结局",
+    "3 区域 Boss 撤退规则 + 阶段状态机 + 战役推进",
+    "最终区域'黑暗核心' + 4 任务链 + 3 封印 + 4 任务物品 + 5 露营活动 + 6 敌人 + 4 奇物 + 3 陷阱",
+    "最终 Boss'黑暗本相'4 阶段(试探与回忆 / 多区域机制融合 / 英雄个体考验 / 最终抉择)",
+    "4 结局:胜利 / 惨胜 / 失败继续 / 战役崩溃",
+    "9 平衡指标 + 健康检查",
+    "Content Manifest 109 条目 + 引用 / 重复 / 不可达 / Debug 隔离审计",
+    "Originality Manifest 39 条目 / 0 阻塞(全原创命名)",
+    "Production Build Mode 5 环境隔离(Debug / Audit / 强制资源 / 跳阶段 / 测试 Seed 全隔离)",
+    "存档导入导出(含 FNV-1a checksum + 自动备份 + 导入失败不覆盖原档)",
+    "Diagnostic Bundle 错误报告导出(脱敏 + 隐私保护)",
+    "PWA 离线(Manifest + Service Worker + 离线回退页 + 启动图标)",
+    "1.0.0-rc1: 1000+ 自动化测试覆盖(947 + 9A-9F 新增)"
+  ],
+  "majorChanges": [
+    "存档 schema v6 → v7:补 finalCampaignState + campaignEnding 字段",
+    "GameState.version 模板:升级到 7",
+    "HERO_FIRST_NAMES:Reynauld/Dismas/Junia/Pox → 阿瑟/凯恩/莉娜/洛(全原创)",
+    "所有 Boss/区域/敌人/技能/饰品/怪癖/疾病/任务/最终区域全中文原创命名",
+    "Service Worker 缓存版本与 build version 绑定:v0.9.0-rc1"
+  ],
+  "knownIssues": [
+    "Phase 6 Debug Panel + 7A 13 个 UI 组件未挂载 App.tsx(Phase 9 范围外,1.0 后可挂载)",
+    "npx build / npx lint / npx test:e2e 未跑(部署时人工验证)",
+    "持久化层 localStorage 备份/导出/导入 UI 待实现(Save Portability 工具已就绪)",
+    "390×844 移动端截图未做(测试覆盖但无视觉确认)"
+  ],
+  "rollback": "回滚到上一静态构建,保留玩家本地存档。1.0 后 v1.0.1 修复。"
+}

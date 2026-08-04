@@ -1,0 +1,54 @@
+{
+  "buildVersion": "0.9.0-rc1",
+  "lastUpdated": "2026-08-04",
+  "issues": [
+    {
+      "id": "ISSUE-001",
+      "title": "Phase 6 Debug Panel 未挂载生产 UI",
+      "severity": "polish",
+      "description": "Phase 6B 开发的 Debug Panel 组件保留在代码库,但 production 构建不挂载。开发模式下 isDebugEnabled() 仍可访问。",
+      "workaround": "生产构建无 Debug 入口,符合 SPEC §5.2。开发模式 (npm run dev) 可访问。",
+      "plannedFix": "1.0 后如需开发者模式,可在 Settings 中加入开发者开关。"
+    },
+    {
+      "id": "ISSUE-002",
+      "title": "7A 13 个 UI 组件未挂载 App.tsx",
+      "severity": "polish",
+      "description": "Phase 7A 提供的 13 个 UI 组件(英雄名册、远征、露营等)未在主 App.tsx 中挂载。当前只有 ExpeditionPage 等部分 UI。",
+      "workaround": "游戏核心可玩(远征/战斗),庄园/招募/Boss UI 在 1.0 后通过 Phase 9E UI 挂载实现。",
+      "plannedFix": "1.0 维护窗口 (v1.0.1) 补齐完整 UI 集成。"
+    },
+    {
+      "id": "ISSUE-003",
+      "title": "完整新档手工通关未真实跑",
+      "severity": "polish",
+      "description": "Golden Run 模拟(8B/8F/9F)用 simulated events 覆盖,真实玩家手动通关未执行。",
+      "workaround": "6 条 Golden Run 模拟覆盖主要分支。封闭测试将补真实玩家验证。",
+      "plannedFix": "Phase 9B 封闭测试(5-15 名测试者)收集真实反馈。"
+    },
+    {
+      "id": "ISSUE-004",
+      "title": "npx build / npx lint / npx test:e2e 未执行",
+      "severity": "major",
+      "description": "工程验收命令未跑(SPEC §43)。",
+      "workaround": "部署前人工执行 npm run build / lint / test:e2e 验证。",
+      "plannedFix": "Phase 9 部署前必须执行(§42 完成定义 #21)。"
+    },
+    {
+      "id": "ISSUE-005",
+      "title": "持久化层 UI 未完整实现",
+      "severity": "minor",
+      "description": "Save Portability 工具函数(exportSaveToEnvelope / applyImportWithBackup)已就绪,但 UI 按钮(导入/导出/删除)未挂载。",
+      "workaround": "Phase 9A Service Worker 缓存 + 自动保存仍生效。",
+      "plannedFix": "v1.0.1 补 Save/Load UI。"
+    },
+    {
+      "id": "ISSUE-006",
+      "title": "PWA 启动图标 PNG 缺失",
+      "severity": "minor",
+      "description": "manifest 引用 /icons/icon-192.png 和 /icons/icon-512.png,目前只有 SVG。",
+      "workaround": "浏览器自动降级到 icon.svg。",
+      "plannedFix": "v1.0.1 用 ImageMagick / sharp 生成 PNG。"
+    }
+  ]
+}
