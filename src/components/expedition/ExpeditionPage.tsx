@@ -89,7 +89,7 @@ export function ExpeditionPage() {
     return (
       <div className="app-shell">
         <div className="expedition-start">
-          <h1>Darkest Dungeon</h1>
+          <h1>暗域远征</h1>
           <p className="subtitle">单页节点远征 · 移动优先</p>
           <div className="loadout">
             <h3>默认队伍</h3>

@@ -1,0 +1,22 @@
+{
+  "_comment": "Phase 9A: 原作专属词(用于 Production Audit 扫描)。从 JSON 加载避免 src/** 扫描触发 7F 检测。",
+  "heroNames": [
+    "Reynauld",
+    "Dismas",
+    "Junia",
+    "Baudelaire",
+    "Paracelsus"
+  ],
+  "heroClasses": [
+    "Crusader",
+    "Highwayman",
+    "Vestal",
+    "PlagueDoctor"
+  ],
+  "regions": [
+    "Darkest Dungeon"
+  ],
+  "uiTerms": [
+    "Heart Attack"
+  ]
+}
